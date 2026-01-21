@@ -11,9 +11,11 @@ export const AdminProductsPage = () => {
     <>
 
       <div className="flex justify-between items-center">
-      <AdminTitle title="Productos" subtitle="Gestión de productos" />
+        <AdminTitle title="Productos" subtitle="Gestión de productos" />
 
-      <Link to="/admin/products/new"><Button><PlusIcon /> Nuevo Producto</Button></Link>
+        <div className="flex justify-end mb-10 gap-4">
+          <Link to="/admin/products/new"><Button><PlusIcon /> Nuevo Producto</Button></Link>  
+        </div>
       </div>
       
 
@@ -26,7 +28,6 @@ export const AdminProductsPage = () => {
             <TableHead>Precio</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Inventario</TableHead>
-            <TableHead>Tallas</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -38,7 +39,6 @@ export const AdminProductsPage = () => {
             <TableCell>$250.00</TableCell>
             <TableCell>Categoria A</TableCell>
             <TableCell>200 Stock</TableCell>
-            <TableCell>XS, S, M, L, XL</TableCell>
             <TableCell className="text-right"><Link to={`/admin/products/asado`}>Editar</Link></TableCell>
           </TableRow>
         </TableBody>
