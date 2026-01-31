@@ -7,10 +7,9 @@ interface ProductCardProps {
   name: string;
   price: number;
   image: string;
-  category: string;
 }
 
-export const ProductCard = ({ id, name, price, image, category }: ProductCardProps) => {
+export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
   return (
     <Card className="group border-0 shadow-none product-card-hover cursor-pointer">
       <CardContent className="p-0">
@@ -26,7 +25,6 @@ export const ProductCard = ({ id, name, price, image, category }: ProductCardPro
 
           <div className="pt-6 px-4 pb-3 space-y-1">
             <h3 className="font-medium text-sm tracking-tight">{name}</h3>
-            <p className="text-xs text-muted-foreground uppercase">{category}</p>
           </div>
         </Link>
 

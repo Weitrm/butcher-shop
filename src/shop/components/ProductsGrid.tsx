@@ -1,10 +1,10 @@
-import { type Product } from "@/mocks/products.mock"
 import { Button } from "@/components/ui/button"
 import { Filter, Grid, List } from "lucide-react"
 import { ProductCard } from "./ProductCart"
 import { FilterSidebar } from "./FilterSidebar"
 import { useSearchParams } from "react-router"
 import { useState } from "react"
+import type { Product } from "@/interface/product.interface"
 
 interface Props { 
     products: Product[]
@@ -95,10 +95,9 @@ export const ProductsGrid = ({products}: Props) => {
                   <ProductCard
                     key={product.id}
                     id={product.id}
-                    name={product.name}
+                    name={product.title}
                     price={product.price}
-                    image={product.image}
-                    category={product.category}
+                    image={product.images[0]}
                   />
                 ))}
               </div> 

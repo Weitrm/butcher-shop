@@ -1,14 +1,20 @@
 import { Search, ShoppingBag } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { useRef, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CustomLogo } from "@/components/custom/CustomLogo";
+
+import { useAuthStore } from "@/auth/store/auth.store";
+
+
 export const CustomHeader = () => {
   const [cartCount] = useState(0);
   
   const [searchParams, setSearchParams] = useSearchParams();
+  const { authStatus, isAdmin, logout } = useAuthStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
   const query = searchParams.get('query') || '';
@@ -76,6 +82,8 @@ export const CustomHeader = () => {
                 </span>}
             </Button>
 
+            {
+              authStatus === 'not-authenticated' ?( 
             <Link to='/auth/login'>
               <Button
                 variant='default'
@@ -86,15 +94,30 @@ export const CustomHeader = () => {
               </Button>
             </Link>
 
-            <Link to='/admin'>
-              <Button
-                variant='destructive'
-                size='sm'
-                className="ml-2"
-              >
-                Admin
-              </Button>
-            </Link>
+              ) : (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className="ml-2"
+                  onClick={logout}
+                >
+                  Cerrar sesión
+                </Button>
+              )
+            }    
+            {
+              isAdmin() && (
+                <Link to='/admin'>
+                  <Button
+                    variant='destructive'
+                    size='sm'
+                    className="ml-2"
+                  >
+                    Admin
+                  </Button>
+                </Link>
+              )
+            }
           </div>
         </div>
       </div>

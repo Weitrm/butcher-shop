@@ -200,7 +200,6 @@ export const ProductPage = () => {
                 name={item.name}
                 price={item.price}
                 image={item.image}
-                category={item.category}
               />
             ))}
           </div>
