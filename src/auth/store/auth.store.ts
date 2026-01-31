@@ -20,8 +20,8 @@ type AuthState = {
     
     //Actions
     login: (email: string, password: string) => Promise<boolean>;
-    register: (email: string, password: string, fullName: string) => Promise<boolean>;
     logout: () => void;
+    register: (email: string, password: string, fullName: string) => Promise<boolean>;
     checkAuthStatus: () => Promise<boolean>;
 };
 
@@ -51,19 +51,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             return false;
         }
     },
-    register: async(email: string, password: string, fullName: string) => {
-        try {
-            const data = await registerAction(email, password, fullName);
-            localStorage.setItem('token', data.token);
-
-            set({user: data.user, token: data.token, authStatus: 'authenticated'});
-            return true;
-        } catch (error) {
-            localStorage.removeItem('token');
-            set({user: null, token: null, authStatus: 'not-authenticated'});
-            return false;
-        }
-    },
     logout: () => {
         localStorage.removeItem('token');
         set({user: null, token: null, authStatus: 'not-authenticated'});
@@ -79,5 +66,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             set({user: undefined, token: undefined, authStatus: 'not-authenticated'});
             return false;
         }
-    }
+    },
+    register: async(email: string, password: string, fullName: string) => {
+        try {
+            const data = await registerAction(email, password, fullName);
+            localStorage.setItem('token', data.token);
+
+            set({user: data.user, token: data.token, authStatus: 'authenticated'});
+            return true;
+        } catch (error) {
+            localStorage.removeItem('token');
+            set({user: null, token: null, authStatus: 'not-authenticated'});
+            return false;
+        }
+    },
 }));

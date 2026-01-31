@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router"
 import { useState } from "react"
 import type { Product } from "@/interface/product.interface"
 
-interface Props { 
+interface Props {
     products: Product[]
 }
 

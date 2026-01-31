@@ -13,8 +13,6 @@ interface Product {
   description: string;
   slug: string;
   stock: number;
-  sizes: string[];
-  gender: string;
   tags: string[];
   images: string[];
 }
@@ -36,8 +34,6 @@ export const AdminProductPage = () => {
       "Corte clásico uruguayo, ideal para parrilladas y reuniones familiares.",
     slug: 'asado',
     stock: 10,
-    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-    gender: 'men',
     tags: ['hoodie'],
     images: [
       'https://placehold.co/250x250',
