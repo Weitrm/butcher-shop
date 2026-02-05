@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Filter, Grid, List } from "lucide-react"
-import { ProductCard } from "./ProductCart"
+import { ProductCard } from "./ProductCart" 
 import { FilterSidebar } from "./FilterSidebar"
 import { useSearchParams } from "react-router"
 import { useState } from "react"

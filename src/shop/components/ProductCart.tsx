@@ -28,7 +28,7 @@ export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
           </div>
         </Link>
 
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4"> 
           <div className="flex items-center justify-between">
             <p className="font-semibold text-lg">${price}</p>
             <Button
