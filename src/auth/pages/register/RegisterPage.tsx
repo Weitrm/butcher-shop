@@ -16,6 +16,16 @@ export const RegisterPage = () => {
   const { register } = useAuthStore();
   const [isPosting, setIsPosting] = useState(false);
 
+  const validateForm = (fullName: string, email: string, password: string) => {
+    if (!fullName.trim()) return 'El nombre es requerido';
+    if (fullName.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
+    if (!email.trim()) return 'El correo es requerido';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'El correo no es valido';
+    if (!password) return 'La contraseña es requerida';
+    if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
+    return null;
+  };
+
   const handleRegister = async(event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsPosting(true);
@@ -24,6 +34,13 @@ export const RegisterPage = () => {
     const fullName = formData.get('fullName') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
+
+    const errorMessage = validateForm(fullName, email, password);
+    if (errorMessage) {
+      toast.error(errorMessage);
+      setIsPosting(false);
+      return;
+    }
 
     const isValid = await register(email, password, fullName);
 
