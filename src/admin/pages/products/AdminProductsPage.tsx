@@ -5,13 +5,36 @@ import { Button } from "@/components/ui/button"
 import {Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { currencyFormatter } from "@/lib/currency-formatter"
 import { useProducts } from "@/shop/hooks/useProducts"
-import { PencilIcon, PlusIcon } from "lucide-react"
+import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { Link } from "react-router"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { deleteProductAction } from "@/admin/actions/delete-product.action"
+import { toast } from "sonner"
 
 
 
 export const AdminProductsPage = () => {
   const { data, isLoading } = useProducts();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteProductAction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Producto eliminado con exito');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar producto', error);
+      toast.error('Error al eliminar producto');
+    }
+  })
+
+  const handleDelete = async (productId: string) => {
+    const confirmDelete = window.confirm('¿Seguro que quieres eliminar este producto?');
+    if (!confirmDelete) return;
+
+    await deleteMutation.mutateAsync(productId);
+  };
   
   if (isLoading) {
     return <CustomFullScreenLoading />
@@ -47,7 +70,21 @@ export const AdminProductsPage = () => {
               <TableCell><Link to={`/admin/products/${product.id}`} className=" hover:text-blue-500 hover:underline">{product.title}</Link></TableCell>
               <TableCell>{currencyFormatter(product.price)}</TableCell>
               <TableCell>{product.stock} Stock</TableCell>
-              <TableCell className="text-right"><Link to={`/admin/products/${product.id}`}><PencilIcon className="w-5 h-5 text-blue-500"/></Link></TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end items-center gap-3">
+                  <Link to={`/admin/products/${product.id}`}>
+                    <PencilIcon className="w-5 h-5 text-blue-500"/>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(product.id)}
+                    className="text-red-500 hover:text-red-600"
+                    aria-label={`Eliminar ${product.title}`}
+                  >
+                    <Trash2Icon className="w-5 h-5" />
+                  </button>
+                </div>
+              </TableCell>
             </TableRow>
           ))
   }
