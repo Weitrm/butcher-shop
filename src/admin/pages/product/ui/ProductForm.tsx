@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminTitle } from "@/admin/components/AdminTitle";
 
 import { useForm } from "react-hook-form";
@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import type { Product } from "@/interface/product.interface";
 
 import { Button } from "@/components/ui/button";
-import { Plus, SaveAll, Tag, Upload, X } from "lucide-react";
+import { SaveAll, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 
@@ -15,14 +15,37 @@ interface Props {
     title: string;
     subTitle: string;
     product: Product;
+    isPending: boolean;
+
+    //Methods
+    onSubmit: (productLike: Partial<Product> & { files?: File[] }) => Promise<void>;
+    onDeleteImage: (imageUrl: string, images: string[]) => Promise<void>;
 }
 
-export const ProductForm = ({title, subTitle, product }: Props) => {
+interface FormInputs extends Product {
+    files?: File[];
+
+}
+
+export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDeleteImage}: Props) => {
 
     const [dragActive, setDragActive] = useState(false);
-    const {register, handleSubmit, formState: {errors}} = useForm({
+    // useForm hook
+    const {register, handleSubmit, formState: {errors}, watch, getValues, setValue} = useForm<FormInputs>({
         defaultValues: product
     })
+
+    const [files, setFiles] = useState<File[]>([]);
+    const [images, setImages] = useState<string[]>(product.images || []);
+
+    useEffect(() => {
+        setFiles([]);
+        setImages(product.images || []);
+        setValue('images', product.images || []);
+    }, [product])
+
+    const currentStock = watch('stock');
+
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -39,35 +62,37 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
     e.stopPropagation();
     setDragActive(false);
     const files = e.dataTransfer.files;
-    console.log(files);
+    if (!files) return;
+
+    setFiles((prev) => [...prev, ...Array.from(files)]);
+    const currentFiles = getValues('files') || [];
+    setValue('files', [...currentFiles, ...Array.from(files)]);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    console.log(files);
-  };
+    if (!files) return;
 
-  //TODO remover en un futuro
-
-  const onSubmit = (productLike: Product) => {
-    console.log('onSubmit', productLike);
-  }
+    setFiles((prev) => [...prev, ...Array.from(files)]);
+    const currentFiles = getValues('files') || [];
+    setValue('files', [...currentFiles, ...Array.from(files)]);
+    };
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex justify-between items-center">
             <AdminTitle title={title} subtitle={subTitle} />
             <div className="flex justify-end mb-10 gap-4">
-            <Button variant="outline">
+            <Button variant="outline" type="button">
                 <Link to="/admin/products" className="flex items-center gap-2">
                 <X className="w-4 h-4" />
                 Cancelar
                 </Link>
             </Button>
 
-            <Button>
+            <Button type="submit" disabled={isPending}>
                 <SaveAll className="w-4 h-4" />
-                Guardar cambios
+                Guardar
             </Button>
             </div>
         </div>
@@ -112,7 +137,7 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
 
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Stock del producto
+                        Stock del producto (KG)
                         </label>
                         <input
                         type="number"
@@ -202,7 +227,7 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
                     Imágenes actuales
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
-                    {product.images.map((image, index) => (
+                    {images.map((image, index) => (
                         <div key={index} className="relative group">
                         <div className="aspect-square bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center">
                             <img
@@ -211,7 +236,23 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
                             className="w-full h-full object-cover rounded-lg"
                             />
                         </div>
-                        <button className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                        type="button"
+                        onClick={() => {
+                            if (images.length <= 1) return;
+                            const nextImages = images.filter((img) => img !== image);
+                            setImages(nextImages);
+                            setValue('images', nextImages);
+                            onDeleteImage(image, nextImages);
+                        }}
+                        disabled={images.length <= 1}
+                        className={cn(
+                            "absolute top-2 right-2 p-1 rounded-full transition-opacity duration-200",
+                            images.length <= 1
+                                ? "bg-slate-300 text-slate-500 cursor-not-allowed opacity-100"
+                                : "bg-red-500 text-white opacity-0 group-hover:opacity-100"
+                        )}
+                        >
                             <X className="h-3 w-3" />
                         </button>
                         <p className="mt-1 text-xs text-slate-600 truncate">
@@ -219,6 +260,26 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
                         </p>
                         </div>
                     ))}
+                    </div>
+                </div>
+
+                {/* imagenes por cargar */}
+                
+                <div className={
+                    cn("mt-6 space-y-3", {'hidden': files.length === 0})
+                }>
+                    <h3 className="text-sm font-medium text-slate-700">
+                    Imágenes por cargar
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {files.map((file, index) => (
+                            <img
+                            src={URL.createObjectURL(file)}
+                            alt="Product"
+                            key={index}
+                            className="w-full h-full object-cover rounded-lg"
+                            />
+                        ))}
                     </div>
                 </div>
                 </div>
@@ -245,16 +306,16 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
                     </span>
                     <span
                         className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        product.stock > 5
+                        currentStock > 199
                             ? 'bg-green-100 text-green-800'
-                            : product.stock > 0
+                            : currentStock > 100
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                         }`}
                     >
-                        {product.stock > 5
+                        {currentStock > 199
                         ? 'En stock'
-                        : product.stock > 0
+                        : currentStock > 100
                         ? 'Bajo stock'
                         : 'Sin stock'}
                     </span>
@@ -265,7 +326,7 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
                         Imágenes
                     </span>
                     <span className="text-sm text-slate-600">
-                        {product.images.length} imágenes
+                        {images.length} imágenes
                     </span>
                     </div>
                 </div>
@@ -276,3 +337,4 @@ export const ProductForm = ({title, subTitle, product }: Props) => {
         </form>
   );
 }
+
