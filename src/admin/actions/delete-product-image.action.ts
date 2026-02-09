@@ -7,6 +7,7 @@ interface DeleteProductImageArgs {
     images: string[];
 }
 
+
 export const deleteProductImageAction = async (
     { productId, imageUrl, images }: DeleteProductImageArgs
 ): Promise<Product> => {
