@@ -1,8 +1,25 @@
 import { butcherApi } from "@/api/butcherApi";
-import type { Order } from "@/interface/order.interface";
+import type { OrdersResponse } from "@/interface/orders.response";
 import { mapOrdersImages } from "@/shop/actions/order.mapper";
 
-export const getAdminOrdersAction = async (): Promise<Order[]> => {
-  const { data } = await butcherApi.get<Order[]>("/orders/admin");
-  return mapOrdersImages(data);
+interface Options {
+  limit?: number | string;
+  offset?: number | string;
+}
+
+export const getAdminOrdersAction = async (
+  options: Options = {},
+): Promise<OrdersResponse> => {
+  const { limit, offset } = options;
+  const { data } = await butcherApi.get<OrdersResponse>("/orders/admin", {
+    params: {
+      limit,
+      offset,
+    },
+  });
+
+  return {
+    ...data,
+    orders: mapOrdersImages(data.orders),
+  };
 };

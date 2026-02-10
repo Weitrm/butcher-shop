@@ -6,8 +6,6 @@ export const loginAction = async(email: string, password: string):Promise<AuthRe
 
     try {
         const {data} = await butcherApi.post<AuthResponse>('/auth/login', { email, password })
-
-        console.log(data);
         
         return data;
     } catch (error) {  

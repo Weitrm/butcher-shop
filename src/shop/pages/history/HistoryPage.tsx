@@ -1,6 +1,8 @@
+import { useMemo } from "react"
 import { CustomJumbotron } from "@/shop/components/CustomJumbotron"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { CustomPagination } from "@/components/custom/CustomPagination"
 import { useOrders } from "@/shop/hooks/useOrders"
 
 const statusLabels: Record<string, string> = {
@@ -16,7 +18,16 @@ const formatDate = (value: string) =>
   })
 
 export const HistoryPage = () => {
-  const { data: orders = [], isLoading } = useOrders()
+  const { data, isLoading } = useOrders()
+  const orders = data?.orders || []
+  const orderedOrders = useMemo(
+    () =>
+      [...orders].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [orders],
+  )
 
   return (
     <>
@@ -33,7 +44,7 @@ export const HistoryPage = () => {
                 </CardContent>
               </Card>
             ) : (
-              orders.map((order) => (
+              orderedOrders.map((order) => (
                 <Card key={order.id}>
                   <CardContent className="p-6 space-y-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -93,6 +104,7 @@ export const HistoryPage = () => {
               ))
             )}
           </div>
+          <CustomPagination totalPages={data?.pages || 0} />
         </section>
     </>
   )

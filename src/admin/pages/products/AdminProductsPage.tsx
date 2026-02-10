@@ -6,7 +6,7 @@ import {Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/
 import { currencyFormatter } from "@/lib/currency-formatter"
 import { useAdminProducts } from "@/admin/hooks/useAdminProducts"
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
-import { Link } from "react-router"
+import { Link, useSearchParams } from "react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { deleteProductAction } from "@/admin/actions/delete-product.action"
 import { toast } from "sonner"
@@ -16,6 +16,8 @@ import { toast } from "sonner"
 export const AdminProductsPage = () => {
   const { data, isLoading } = useAdminProducts();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const status = searchParams.get('status') || 'all';
 
   const deleteMutation = useMutation({
     mutationFn: deleteProductAction,
@@ -48,6 +50,25 @@ export const AdminProductsPage = () => {
         <AdminTitle title="Productos" subtitle="Gestión de productos" />
 
         <div className="flex justify-end mb-10 gap-4">
+          <select
+            value={status}
+            onChange={(event) => {
+              const nextParams = new URLSearchParams(searchParams);
+              const value = event.target.value;
+              if (value === 'all') {
+                nextParams.delete('status');
+              } else {
+                nextParams.set('status', value);
+              }
+              nextParams.set('page', '1');
+              setSearchParams(nextParams);
+            }}
+            className="h-9 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-700"
+          >
+            <option value="all">Todos</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
           <Link to="/admin/products/new"><Button><PlusIcon /> Nuevo Producto</Button></Link>  
         </div>
       </div>

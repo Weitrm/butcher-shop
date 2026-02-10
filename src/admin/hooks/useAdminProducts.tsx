@@ -7,6 +7,7 @@ export const useAdminProducts = () => {
   const query = searchParams.get("query") || "";
   const limit = searchParams.get("limit") || 9;
   const page = searchParams.get("page") || 1;
+  const status = searchParams.get("status") || "all";
   const offset = (Number(page) - 1) * Number(limit);
 
   const price = searchParams.get("price") || "any";
@@ -33,8 +34,15 @@ export const useAdminProducts = () => {
       break;
   }
 
+  let isActive: boolean | undefined = undefined;
+  if (status === "active") isActive = true;
+  if (status === "inactive") isActive = false;
+
   return useQuery({
-    queryKey: ["admin-products", { limit, offset, minPrice, maxPrice, query }],
+    queryKey: [
+      "admin-products",
+      { limit, offset, minPrice, maxPrice, query, status },
+    ],
     queryFn: () =>
       getAdminProductsAction({
         limit: isNaN(+limit) ? 9 : limit,
@@ -42,6 +50,7 @@ export const useAdminProducts = () => {
         minPrice,
         maxPrice,
         query,
+        isActive,
       }),
     staleTime: 1000 * 60 * 5,
   });
