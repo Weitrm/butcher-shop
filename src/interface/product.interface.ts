@@ -7,6 +7,7 @@ export interface Product {
     description: string;
     slug:        string;
     stock:       number;
+    isActive:    boolean;
     gender:      string;
     images:      string[];
     user:        User;

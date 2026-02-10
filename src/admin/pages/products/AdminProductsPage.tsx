@@ -4,7 +4,7 @@ import { CustomPagination } from "@/components/custom/CustomPagination"
 import { Button } from "@/components/ui/button"
 import {Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { currencyFormatter } from "@/lib/currency-formatter"
-import { useProducts } from "@/shop/hooks/useProducts"
+import { useAdminProducts } from "@/admin/hooks/useAdminProducts"
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { Link } from "react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -14,13 +14,14 @@ import { toast } from "sonner"
 
 
 export const AdminProductsPage = () => {
-  const { data, isLoading } = useProducts();
+  const { data, isLoading } = useAdminProducts();
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
     mutationFn: deleteProductAction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       toast.success('Producto eliminado con exito');
     },
     onError: (error) => {
@@ -57,12 +58,13 @@ export const AdminProductsPage = () => {
           <TableRow>
             <TableHead>Imagen</TableHead>
             <TableHead>Nombre</TableHead>
-            <TableHead>Precio</TableHead>
-            <TableHead>Inventario</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+          <TableHead>Precio</TableHead>
+          <TableHead>Inventario</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
           {
             data!.products.map(product => (
             <TableRow key={product.id}>
@@ -70,6 +72,13 @@ export const AdminProductsPage = () => {
               <TableCell><Link to={`/admin/products/${product.id}`} className=" hover:text-blue-500 hover:underline">{product.title}</Link></TableCell>
               <TableCell>{currencyFormatter(product.price)}</TableCell>
               <TableCell>{product.stock} Stock</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  product.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {product.isActive ? 'Activo' : 'Inactivo'}
+                </span>
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end items-center gap-3">
                   <Link to={`/admin/products/${product.id}`}>

@@ -15,6 +15,7 @@ export const createUpdateProductAction = async (
 
     rest.stock = Number(rest.stock || 0);
     rest.price = Number(rest.price || 0);
+    rest.isActive = rest.isActive === undefined ? true : Boolean(rest.isActive);
 
 
     // Preparar las imagenes

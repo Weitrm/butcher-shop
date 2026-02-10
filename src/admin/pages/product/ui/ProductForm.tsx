@@ -45,6 +45,7 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
     }, [product])
 
     const currentStock = watch('stock');
+    const isActive = watch('isActive') ?? true;
 
 
   const handleDrag = (e: React.DragEvent) => {
@@ -295,10 +296,24 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
                     <span className="text-sm font-medium text-slate-700">
                         Estado
                     </span>
-                    <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                        Activo
+                    <span className={cn(
+                        "px-2 py-1 text-xs font-medium rounded-full",
+                        isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    )}>
+                        {isActive ? 'Activo' : 'Inactivo'}
                     </span>
                     </div>
+
+                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <span className="text-sm font-medium text-slate-700">
+                            Habilitado para venta
+                        </span>
+                        <input
+                            type="checkbox"
+                            {...register('isActive')}
+                            className="h-4 w-4"
+                        />
+                    </label>
 
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                     <span className="text-sm font-medium text-slate-700">

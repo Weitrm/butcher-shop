@@ -20,6 +20,7 @@ export const useProduct = (id: string) => {
         onSuccess: (product: Product) => {
             // Invalidar cache
             queryClient.invalidateQueries({queryKey: ['products']});
+            queryClient.invalidateQueries({queryKey: ['admin-products']});
             queryClient.invalidateQueries({queryKey: ['product', {id: product.id}]});
 
             // Actualizar queryData
@@ -33,6 +34,7 @@ export const useProduct = (id: string) => {
         onSuccess: (product: Product) => {
             // Invalidar cache
             queryClient.invalidateQueries({queryKey: ['products']});
+            queryClient.invalidateQueries({queryKey: ['admin-products']});
             queryClient.invalidateQueries({queryKey: ['product', {id: product.id}]});
 
             // Actualizar queryData

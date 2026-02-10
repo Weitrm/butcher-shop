@@ -14,11 +14,12 @@ export const getProductByIdAction = async(id: string): Promise<Product> => {
             description: '',
             slug: '',
             stock: 0,
+            isActive: true,
             images: [],
         } as unknown as Product;
     }
 
-    const {data} = await butcherApi.get<Product>(`/products/${id}`);
+    const {data} = await butcherApi.get<Product>(`/products/admin/${id}`);
 
     const images = data.images.map(image => { 
         if (image.includes('http')) return image;
