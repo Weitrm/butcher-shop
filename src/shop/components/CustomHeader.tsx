@@ -45,14 +45,11 @@ export const CustomHeader = () => {
             )}>
               Inicio
             </Link>
+            <Link to="/pedidos" className="text-sm font-medium transition-colors hover:text-primary">
+              Pedido
+            </Link>
             <Link to="/historial" className="text-sm font-medium transition-colors hover:text-primary">
               Historial
-            </Link>
-            <Link to="/pedidos" className="text-sm font-medium transition-colors hover:text-primary">
-              Pedidos
-            </Link>
-            <Link to="/accesorios" className="text-sm font-medium transition-colors hover:text-primary">
-              Accesorios
             </Link>
           </nav>
 
