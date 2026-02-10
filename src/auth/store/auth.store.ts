@@ -3,6 +3,26 @@ import { create } from 'zustand'
 import { loginAction } from '../actions/login.action';
 import { checkAuthAction } from '../actions/check-auth.action';
 import { registerAction } from '../actions/register.action';
+import { useCartStore } from '@/shop/store/cart.store';
+
+const CART_STORAGE_KEY = 'butcher-cart';
+const CART_USER_KEY = 'butcher-cart-user';
+
+const syncCartOwner = (userId?: string | null) => {
+    if (!userId) return;
+    const currentOwner = localStorage.getItem(CART_USER_KEY);
+    if (currentOwner && currentOwner !== userId) {
+        useCartStore.getState().clear();
+        localStorage.removeItem(CART_STORAGE_KEY);
+    }
+    localStorage.setItem(CART_USER_KEY, userId);
+};
+
+const clearCartStorage = () => {
+    useCartStore.getState().clear();
+    localStorage.removeItem(CART_STORAGE_KEY);
+    localStorage.removeItem(CART_USER_KEY);
+};
 
 
 type authStatus = 'authenticated' | 'not-authenticated' | 'checking';
@@ -43,6 +63,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             const data = await loginAction(email, password);
             localStorage.setItem('token', data.token);
 
+            syncCartOwner(data.user.id);
             set({user: data.user, token: data.token, authStatus: 'authenticated'});
             return true;
         } catch (error) {
@@ -53,6 +74,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     },
     logout: () => {
         localStorage.removeItem('token');
+        clearCartStorage();
         set({user: null, token: null, authStatus: 'not-authenticated'});
     },
 
@@ -60,6 +82,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
         try {
             const { user, token } = await checkAuthAction();
+            syncCartOwner(user?.id);
             set({ user, token, authStatus: 'authenticated' });
             return true;
         } catch (error) {
@@ -72,6 +95,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             const data = await registerAction(email, password, fullName);
             localStorage.setItem('token', data.token);
 
+            syncCartOwner(data.user.id);
             set({user: data.user, token: data.token, authStatus: 'authenticated'});
             return true;
         } catch (error) {

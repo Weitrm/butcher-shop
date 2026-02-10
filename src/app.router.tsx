@@ -4,13 +4,15 @@ import { lazy } from "react";
 import { ShopLayout } from "./shop/layout/ShopLayout";
 import { HomePage } from "./shop/pages/home/HomePage";
 import { ProductPage } from "./shop/pages/product/ProductPage";
+import { OrderPage } from "./shop/pages/order/OrderPage";
 import { LoginPage } from "./auth/pages/login/LoginPage";
 import { RegisterPage } from "./auth/pages/register/RegisterPage";
 import { DashboardPage } from "./admin/pages/dashboard/DashboardPage";
 import { AdminProductsPage } from "./admin/pages/products/AdminProductsPage";
 import { AdminProductPage } from "./admin/pages/product/AdminProductPage";
+import { AdminOrdersPage } from "./admin/pages/orders/AdminOrdersPage";
 import { HistoryPage } from "./shop/pages/history/HistoryPage";
-import { AdminRoute, NotAuthenticatedRoute } from "./components/routes/ProtectedRoutes";
+import { AdminRoute, AuthenticatedRoute, NotAuthenticatedRoute } from "./components/routes/ProtectedRoutes";
 
 
 const AuthLayout = lazy(() => import('./auth/layout/AuthLayout'));
@@ -30,6 +32,22 @@ export const appRouter = createHashRouter([
             {
                 path: 'product/:idSlug',
                 element: <ProductPage />
+            },
+            {
+                path: 'pedidos',
+                element: (
+                    <AuthenticatedRoute>
+                        <OrderPage />
+                    </AuthenticatedRoute>
+                )
+            },
+            {
+                path: 'historial',
+                element: (
+                    <AuthenticatedRoute>
+                        <HistoryPage />
+                    </AuthenticatedRoute>
+                )
             },
         ]
     },
@@ -55,10 +73,6 @@ export const appRouter = createHashRouter([
                 path: 'register',
                 element: <RegisterPage />
             },
-            {
-                path: 'historial',
-                element: <HistoryPage />
-            },
         ]
     },
     
@@ -82,6 +96,10 @@ export const appRouter = createHashRouter([
             {
                 path: 'products/:id',
                 element: <AdminProductPage />
+            },
+            {
+                path: 'orders',
+                element: <AdminOrdersPage />
             },
         ]
     },

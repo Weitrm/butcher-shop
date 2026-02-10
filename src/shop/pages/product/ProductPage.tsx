@@ -6,10 +6,12 @@ import { ProductCard } from "@/shop/components/ProductCart"
 
 import { useProduct } from "@/shop/hooks/useProduct"
 import { useProducts } from "@/shop/hooks/useProducts"
+import { useCartStore } from "@/shop/store/cart.store"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Minus, Plus, ShoppingBag } from "lucide-react"
+import { toast } from "sonner"
 
 
 
@@ -29,6 +31,7 @@ export const ProductPage = () => {
   }, [product])
 
   const [quantity, setQuantity] = useState(1)
+  const addItem = useCartStore((state) => state.addItem)
 
 
   if (isLoading) {
@@ -133,7 +136,7 @@ export const ProductPage = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setQuantity((prev) => prev + 1)}
+                    onClick={() => setQuantity((prev) => Math.min(10, prev + 1))}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -142,7 +145,25 @@ export const ProductPage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button className="flex-1">
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  const result = addItem({
+                    productId: product.id,
+                    name: product.title,
+                    price: product.price,
+                    image: product.images[0] || "",
+                    kg: quantity,
+                  })
+
+                  if (!result.ok) {
+                    toast.error(result.error || "No se pudo agregar el producto")
+                    return
+                  }
+
+                  toast.success("Producto agregado al pedido")
+                }}
+              >
                 <ShoppingBag className="h-4 w-4 mr-2" />
                 Agregar al carrito
               </Button>

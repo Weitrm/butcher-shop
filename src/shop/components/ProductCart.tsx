@@ -1,6 +1,11 @@
+import { useState, type ChangeEvent } from "react";
+import { Link } from "react-router";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "react-router";
+import { Input } from "@/components/ui/input";
+import { useCartStore } from "@/shop/store/cart.store";
 
 interface ProductCardProps {
   id: string;
@@ -10,6 +15,35 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
+  const [kg, setKg] = useState(1);
+  const addItem = useCartStore((state) => state.addItem);
+
+  const handleKgChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    if (value === "") return;
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return;
+    const nextKg = Math.max(1, Math.min(10, Math.floor(parsed)));
+    setKg(nextKg);
+  };
+
+  const handleAddToCart = () => {
+    const result = addItem({
+      productId: id,
+      name,
+      price,
+      image,
+      kg,
+    });
+
+    if (!result.ok) {
+      toast.error(result.error || "No se pudo agregar el producto");
+      return;
+    }
+
+    toast.success("Producto agregado al pedido");
+  };
+
   return (
     <Card className="group border-0 shadow-none product-card-hover cursor-pointer">
       <CardContent className="p-0">
@@ -29,15 +63,31 @@ export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
         </Link>
 
         <div className="px-4 pb-4"> 
-          <div className="flex items-center justify-between">
-            <p className="font-semibold text-lg">${price}</p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary hover:text-primary-foreground border-primary/20 text-xs px-4 py-2 h-8"
-            >
-              Agregar al carrito
-            </Button>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-lg">${price}</p>
+              <p className="text-xs text-muted-foreground">Selecciona kg</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                step={1}
+                value={kg}
+                onChange={handleKgChange}
+                className="h-8 w-20 text-sm"
+                aria-label={`Kg para ${name}`}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAddToCart}
+                className="transition-all duration-300 hover:bg-primary hover:text-primary-foreground border-primary/20 text-xs px-4 py-2 h-8"
+              >
+                Agregar
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

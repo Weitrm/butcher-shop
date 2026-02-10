@@ -26,7 +26,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) 
     { icon: Home, label: 'Inicio', to: '/admin'},
     { icon: BarChart3, label: 'Productos', to: '/admin/products' },
     { icon: Users, label: 'Usuarios' },
-    { icon: ShoppingCart, label: 'Ordenes' },
+    { icon: ShoppingCart, label: 'Ordenes', to: '/admin/orders' },
     { icon: FileText, label: 'Historial' },
   ];
 

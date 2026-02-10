@@ -1,6 +1,6 @@
 import { Search, ShoppingBag } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,11 @@ import { cn } from "@/lib/utils";
 import { CustomLogo } from "@/components/custom/CustomLogo";
 
 import { useAuthStore } from "@/auth/store/auth.store";
+import { useCartStore } from "@/shop/store/cart.store";
 
 
 export const CustomHeader = () => {
-  const [cartCount] = useState(0);
+  const cartTotalKg = useCartStore((state) => state.getTotalKg());
   
   const [searchParams, setSearchParams] = useSearchParams();
   const { authStatus, isAdmin, logout } = useAuthStore();
@@ -72,11 +73,13 @@ export const CustomHeader = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                  {cartCount}
-                </span>}
+            <Button variant="ghost" size="icon" className="relative" asChild>
+              <Link to="/pedidos">
+                <ShoppingBag className="h-5 w-5" />
+                {cartTotalKg > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                    {cartTotalKg}
+                  </span>}
+              </Link>
             </Button>
 
             {
