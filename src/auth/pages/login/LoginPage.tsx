@@ -13,7 +13,7 @@ import { useAuthStore } from "@/auth/store/auth.store"
 export const LoginPage = () => {
 
   const navigate = useNavigate();
-  const { login  } = useAuthStore();
+  const { login } = useAuthStore();
   const [isPosting, setIsPosting] = useState(false);
 
   const handleLogin = async(event: FormEvent<HTMLFormElement>) => {
@@ -29,7 +29,14 @@ export const LoginPage = () => {
       navigate('/');
       return;
     }
-    toast.error('Error al iniciar sesión. Revisa tus credenciales.');
+    const { lastError } = useAuthStore.getState();
+    const message = (() => {
+      if (lastError === 'timeout') return 'El servidor no responde (timeout). Intenta nuevamente en unos minutos.';
+      if (lastError === 'invalid') return 'Credenciales inválidas. Revisa tu correo y contraseña.';
+      if (lastError === 'network') return 'No se pudo conectar con el servidor.';
+      return 'Error al iniciar sesión. Revisa tus credenciales.';
+    })();
+    toast.error(message);
     setIsPosting(false);
   }
 

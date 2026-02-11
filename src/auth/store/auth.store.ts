@@ -1,5 +1,6 @@
 import type { User } from '@/interface/user.interface'
 import { create } from 'zustand'
+import axios from 'axios'
 import { loginAction } from '../actions/login.action';
 import { checkAuthAction } from '../actions/check-auth.action';
 import { registerAction } from '../actions/register.action';
@@ -26,6 +27,7 @@ const clearCartStorage = () => {
 
 
 type authStatus = 'authenticated' | 'not-authenticated' | 'checking';
+type AuthError = 'timeout' | 'invalid' | 'network' | 'unknown' | null;
 
 
 
@@ -34,6 +36,7 @@ type AuthState = {
     user: User | null,
     token: string | null,
     authStatus: authStatus;
+    lastError: AuthError;
     //Getters
 
     isAdmin: () => boolean;
@@ -49,6 +52,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     user: null,
     token: null,
     authStatus: 'checking',
+    lastError: null,
 
 
     //Getters
@@ -60,6 +64,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     //Actions
     login: async(email: string, password: string) => {
         try {
+            set({ lastError: null });
             const data = await loginAction(email, password);
             localStorage.setItem('token', data.token);
 
@@ -67,6 +72,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             set({user: data.user, token: data.token, authStatus: 'authenticated'});
             return true;
         } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status;
+                if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {
+                    set({ lastError: 'timeout' });
+                } else if (status === 401) {
+                    set({ lastError: 'invalid' });
+                } else if (!error.response) {
+                    set({ lastError: 'network' });
+                } else {
+                    set({ lastError: 'unknown' });
+                }
+            } else {
+                set({ lastError: 'unknown' });
+            }
             localStorage.removeItem('token');
             set({user: null, token: null, authStatus: 'not-authenticated'});
             return false;
@@ -81,6 +100,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     checkAuthStatus: async() => {
 
         try {
+            set({ lastError: null });
             const { user, token } = await checkAuthAction();
             syncCartOwner(user?.id);
             set({ user, token, authStatus: 'authenticated' });
@@ -92,6 +112,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     },
     register: async(email: string, password: string, fullName: string) => {
         try {
+            set({ lastError: null });
             const data = await registerAction(email, password, fullName);
             localStorage.setItem('token', data.token);
 
@@ -99,6 +120,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             set({user: data.user, token: data.token, authStatus: 'authenticated'});
             return true;
         } catch (error) {
+            set({ lastError: 'unknown' });
             localStorage.removeItem('token');
             set({user: null, token: null, authStatus: 'not-authenticated'});
             return false;
