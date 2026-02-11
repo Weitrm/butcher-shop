@@ -18,5 +18,6 @@ export const useDashboardStats = ({
     queryKey: ["admin-dashboard", { query, limit, offset, range }],
     queryFn: () => getDashboardStatsAction({ query, limit, offset, range }),
     staleTime: 1000 * 60,
+    refetchInterval: 1000 * 60 * 3,
     placeholderData: keepPreviousData,
   });

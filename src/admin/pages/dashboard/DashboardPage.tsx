@@ -56,7 +56,7 @@ export const DashboardPage = () => {
     rangeParam === "month" || rangeParam === "year" ? rangeParam : "week";
   const limit = 5;
   const offset = (page - 1) * limit;
-  const { data, isLoading, isFetching } = useDashboardStats({
+  const { data, isLoading, isFetching, refetch } = useDashboardStats({
     query: debouncedQuery,
     limit,
     offset,
@@ -288,9 +288,20 @@ export const DashboardPage = () => {
 
         <Card>
           <CardContent className="p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-900">Ultimos pedidos</h3>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-gray-400" />
+                <h3 className="text-lg font-semibold text-gray-900">Ultimos pedidos</h3>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                {isFetching ? "Actualizando..." : "Actualizar"}
+              </Button>
             </div>
 
             {recentOrders.length === 0 ? (
@@ -343,4 +354,3 @@ export const DashboardPage = () => {
     </>
   )
 }
-
