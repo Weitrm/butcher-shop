@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { DivideIcon as LucideIcon } from 'lucide-react';
 
 interface StatCardProps {

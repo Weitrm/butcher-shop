@@ -42,9 +42,14 @@ type AuthState = {
     isAdmin: () => boolean;
     
     //Actions
-    login: (email: string, password: string) => Promise<boolean>;
+    login: (employeeNumber: string, password: string) => Promise<boolean>;
     logout: () => void;
-    register: (email: string, password: string, fullName: string) => Promise<boolean>;
+    register: (
+        fullName: string,
+        employeeNumber: string,
+        nationalId: string,
+        password: string
+    ) => Promise<boolean>;
     checkAuthStatus: () => Promise<boolean>;
 };
 
@@ -62,10 +67,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     },
 
     //Actions
-    login: async(email: string, password: string) => {
+    login: async(employeeNumber: string, password: string) => {
         try {
             set({ lastError: null });
-            const data = await loginAction(email, password);
+            const data = await loginAction(employeeNumber, password);
             localStorage.setItem('token', data.token);
 
             syncCartOwner(data.user.id);
@@ -110,10 +115,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             return false;
         }
     },
-    register: async(email: string, password: string, fullName: string) => {
+    register: async(fullName: string, employeeNumber: string, nationalId: string, password: string) => {
         try {
             set({ lastError: null });
-            const data = await registerAction(email, password, fullName);
+            const data = await registerAction(fullName, employeeNumber, nationalId, password);
             localStorage.setItem('token', data.token);
 
             syncCartOwner(data.user.id);

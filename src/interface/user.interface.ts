@@ -1,8 +1,9 @@
 export interface User {
-    id:       string;
-    email:    string;
+    id: string;
     fullName: string;
+    employeeNumber: string;
+    nationalId: string;
     isActive: boolean;
-    roles:    string[];
+    roles: string[];
 }
 

@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router';
+﻿import { Link, useLocation } from 'react-router';
 import React from 'react';
 import { 
   Home, 
@@ -25,8 +25,8 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) 
   const menuItems = [
     { icon: Home, label: 'Inicio', to: '/admin'},
     { icon: BarChart3, label: 'Productos', to: '/admin/products' },
-    { icon: Users, label: 'Usuarios' },
-    { icon: ShoppingCart, label: 'Ordenes', to: '/admin/orders' },
+    { icon: Users, label: 'Usuarios', to: '/admin/users' },
+    { icon: ShoppingCart, label: 'Órdenes', to: '/admin/orders' },
     { icon: FileText, label: 'Historial', to: '/admin/history' },
   ];
 
@@ -88,7 +88,11 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) 
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{user?.fullName}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-xs text-gray-500 truncate">
+                {user?.employeeNumber
+                  ? `Func. ${user.employeeNumber}`
+                  : user?.nationalId || "-"}
+              </p>
             </div>
           </div>
         </div>

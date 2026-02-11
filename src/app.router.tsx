@@ -1,4 +1,4 @@
-import { createHashRouter, Navigate } from "react-router";
+﻿import { createHashRouter, Navigate } from "react-router";
 import { lazy } from "react";
 
 import { ShopLayout } from "./shop/layout/ShopLayout";
@@ -6,7 +6,6 @@ import { HomePage } from "./shop/pages/home/HomePage";
 import { ProductPage } from "./shop/pages/product/ProductPage";
 import { OrderPage } from "./shop/pages/order/OrderPage";
 import { LoginPage } from "./auth/pages/login/LoginPage";
-import { RegisterPage } from "./auth/pages/register/RegisterPage";
 import { DashboardPage } from "./admin/pages/dashboard/DashboardPage";
 import { AdminProductsPage } from "./admin/pages/products/AdminProductsPage";
 import { AdminProductPage } from "./admin/pages/product/AdminProductPage";
@@ -14,6 +13,7 @@ import { AdminOrdersPage } from "./admin/pages/orders/AdminOrdersPage";
 import { AdminOrdersHistoryPage } from "./admin/pages/history/AdminOrdersHistoryPage";
 import { HistoryPage } from "./shop/pages/history/HistoryPage";
 import { AdminRoute, AuthenticatedRoute, NotAuthenticatedRoute } from "./components/routes/ProtectedRoutes";
+import { AdminUsersPage } from "./admin/pages/users/AdminUsersPage";
 
 
 const AuthLayout = lazy(() => import('./auth/layout/AuthLayout'));
@@ -72,7 +72,7 @@ export const appRouter = createHashRouter([
             },
             {
                 path: 'register',
-                element: <RegisterPage />
+                element: <Navigate to="/auth/login" replace />
             },
         ]
     },
@@ -101,6 +101,10 @@ export const appRouter = createHashRouter([
             {
                 path: 'orders',
                 element: <AdminOrdersPage />
+            },
+            {
+                path: 'users',
+                element: <AdminUsersPage />
             },
             {
                 path: 'history',

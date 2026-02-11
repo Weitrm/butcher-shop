@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+﻿import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
 
@@ -9,20 +9,25 @@ import { Label } from "@/components/ui/label"
 import { CustomLogo } from "@/components/custom/CustomLogo"
 import { useAuthStore } from "@/auth/store/auth.store"
 
-
-
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuthStore();
   const [isPosting, setIsPosting] = useState(false);
 
-  const validateForm = (fullName: string, email: string, password: string) => {
+  const validateForm = (
+    fullName: string,
+    employeeNumber: string,
+    nationalId: string,
+    password: string
+  ) => {
     if (!fullName.trim()) return 'El nombre es requerido';
     if (fullName.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
-    if (!email.trim()) return 'El correo es requerido';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'El correo no es valido';
+    if (!employeeNumber.trim()) return 'El número de funcionario es requerido';
+    if (!nationalId.trim()) return 'La cédula es requerida';
     if (!password) return 'La contraseña es requerida';
-    if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
+    if (!/^\d+$/.test(password)) return 'La contraseña debe contener solo números';
+    if (password.length < 6) return 'La contraseña debe tener al menos 6 números';
+    if (password.length > 20) return 'La contraseña no puede superar 20 números';
     return null;
   };
 
@@ -32,17 +37,18 @@ export const RegisterPage = () => {
 
     const formData = new FormData(event.target as HTMLFormElement);
     const fullName = formData.get('fullName') as string;
-    const email = formData.get('email') as string;
+    const employeeNumber = formData.get('employeeNumber') as string;
+    const nationalId = formData.get('nationalId') as string;
     const password = formData.get('password') as string;
 
-    const errorMessage = validateForm(fullName, email, password);
+    const errorMessage = validateForm(fullName, employeeNumber, nationalId, password);
     if (errorMessage) {
       toast.error(errorMessage);
       setIsPosting(false);
       return;
     }
 
-    const isValid = await register(email, password, fullName);
+    const isValid = await register(fullName, employeeNumber, nationalId, password);
 
     if (isValid) {
       navigate('/');
@@ -64,24 +70,29 @@ export const RegisterPage = () => {
                 <p className="text-balance text-muted-foreground">Crea una nueva cuenta</p>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="fullName">Nombre</Label>
+                <Label htmlFor="fullName">Nombre completo</Label>
                 <Input id="fullName" name="fullName" type="text" placeholder="Nombre completo" required />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Correo</Label>
-                <Input id="email" name="email" type="email" placeholder="mail@google.com" required />
+                <Label htmlFor="employeeNumber">Número de funcionario</Label>
+                <Input id="employeeNumber" name="employeeNumber" type="text" placeholder="Ej: 1024" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="nationalId">Cédula</Label>
+                <Input id="nationalId" name="nationalId" type="text" placeholder="Ej: 12345678" required />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Constraseña</Label>
+                  <Label htmlFor="password">Contraseña</Label>
                 </div>
-                <Input id="password" name="password" type="password" required placeholder="Constraseña" />
+                <Input id="password" name="password" type="password" required placeholder="Contraseña" />
+                <p className="text-xs text-gray-500">Solo números (6 a 20 dígitos).</p>
               </div>
               <Button type="submit" className="w-full" disabled={isPosting}>
-                Registrarse
+                Registrar
               </Button>
               <div className="text-center text-sm">
-               ¿Ya tienes una cuenta? {''}
+                Ya tienes una cuenta?{" "}
                 <Link to="/auth/login" className="underline underline-offset-4">
                   Ingresar
                 </Link>
@@ -103,4 +114,3 @@ export const RegisterPage = () => {
     </div>
   )
 }
-

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 import { getAdminProductsAction } from "../actions/get-admin-products.action";
 

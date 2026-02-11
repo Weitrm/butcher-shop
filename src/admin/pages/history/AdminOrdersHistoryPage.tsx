@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Search, X } from "lucide-react";
 
@@ -79,7 +79,7 @@ export const AdminOrdersHistoryPage = () => {
                 <Input
                   value={userQuery}
                   onChange={(event) => setUserQuery(event.target.value)}
-                  placeholder="Nombre o email"
+                  placeholder="Nombre, funcionario o cédula"
                   className="pl-9"
                 />
               </div>
@@ -140,7 +140,18 @@ export const AdminOrdersHistoryPage = () => {
                           {order.user?.fullName || "Sin nombre"}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {order.user?.email || "-"}
+                          {order.user
+                            ? [
+                                order.user.employeeNumber
+                                  ? `Func. ${order.user.employeeNumber}`
+                                  : null,
+                                order.user.nationalId
+                                  ? `CI ${order.user.nationalId}`
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" Â· ") || "-"
+                            : "-"}
                         </span>
                       </div>
                     </TableCell>

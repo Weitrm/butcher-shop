@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from "react"
+﻿import type { PropsWithChildren } from "react"
 import {RouterProvider } from "react-router"
 import { appRouter } from "./app.router"
 

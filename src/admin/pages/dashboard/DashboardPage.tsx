@@ -118,10 +118,10 @@ export const DashboardPage = () => {
   });
   const rangeHint =
     range === "year"
-      ? "Ultimos 12 meses."
+      ? "Últimos 12 meses."
       : range === "month"
-        ? "Ultimos 30 dias."
-        : "Ultimos 7 dias.";
+        ? "Últimos 30 días."
+        : "Últimos 7 días.";
 
   const handleRangeChange = (nextRange: "week" | "month" | "year") => {
     const nextParams = new URLSearchParams(searchParams);
@@ -162,7 +162,7 @@ export const DashboardPage = () => {
                 Tendencia de demanda
               </h3>
               <p className="text-sm text-gray-500">
-                {rangeHint} Kg vendidos y pedidos por periodo.
+                {rangeHint} Kg vendidos y pedidos por período.
               </p>
             </div>
             <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
@@ -229,10 +229,10 @@ export const DashboardPage = () => {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Productos mas pedidos
+                  Productos más pedidos
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Ultimos 7 dias, ordenados por kg acumulados.
+                  Últimos 7 días, ordenados por kg acumulados.
                 </p>
               </div>
               <div className="relative w-full sm:w-72">
@@ -291,7 +291,7 @@ export const DashboardPage = () => {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-gray-400" />
-                <h3 className="text-lg font-semibold text-gray-900">Ultimos pedidos</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Últimos pedidos</h3>
               </div>
               <Button
                 type="button"
@@ -316,7 +316,9 @@ export const DashboardPage = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-semibold text-gray-900">
-                          #{order.id.slice(0, 8)}
+                          {order.user?.employeeNumber
+                            ? `Func. ${order.user.employeeNumber}`
+                            : "Funcionario sin número"}
                         </p>
                         <p className="text-xs text-gray-500">
                           {order.user?.fullName || "Cliente"}

@@ -26,6 +26,7 @@ export interface Order {
   user?: {
     id: string;
     fullName: string;
-    email: string;
+    employeeNumber: string;
+    nationalId: string;
   };
 }

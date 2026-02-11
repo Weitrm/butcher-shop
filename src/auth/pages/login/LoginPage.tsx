@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router"
+﻿import { useNavigate } from "react-router"
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 
@@ -20,10 +20,10 @@ export const LoginPage = () => {
     event.preventDefault();
     setIsPosting(true);
     const formData = new FormData(event.target as HTMLFormElement);
-    const email = formData.get('email') as string;
+    const employeeNumber = formData.get('employeeNumber') as string;
     const password = formData.get('password') as string;
     
-    const isValid = await login(email, password);
+    const isValid = await login(employeeNumber, password);
 
     if (isValid) {
       navigate('/');
@@ -32,7 +32,7 @@ export const LoginPage = () => {
     const { lastError } = useAuthStore.getState();
     const message = (() => {
       if (lastError === 'timeout') return 'El servidor no responde (timeout). Intenta nuevamente en unos minutos.';
-      if (lastError === 'invalid') return 'Credenciales inválidas. Revisa tu correo y contraseña.';
+      if (lastError === 'invalid') return 'Credenciales inválidas. Revisa tu número de funcionario y contraseña.';
       if (lastError === 'network') return 'No se pudo conectar con el servidor.';
       return 'Error al iniciar sesión. Revisa tus credenciales.';
     })();
@@ -51,27 +51,24 @@ export const LoginPage = () => {
                 <p className="text-balance text-muted-foreground">Ingresar a la aplicación</p>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Correo</Label>
-                <Input id="email" type="email" name="email" placeholder="mail@google.com" required />
+                <Label htmlFor="employeeNumber">Número de funcionario</Label>
+                <Input
+                  id="employeeNumber"
+                  type="text"
+                  name="employeeNumber"
+                  placeholder="Ej: 1024"
+                  required
+                />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Constraseña</Label>
-                  <a href="#" className="ml-auto text-sm underline-offset-2 hover:underline">
-                    Olvidaste tu contraseña?
-                  </a>
+                  <Label htmlFor="password">Contraseña</Label>
                 </div>
-                <Input id="password" type="password" name="password" required placeholder='Contraseña'/>
+                <Input id="password" type="password" name="password" required placeholder="Contraseña" />
               </div>
               <Button type="submit" className="w-full" disabled={isPosting}>
                 Ingresar
               </Button>
-              <div className="text-center text-sm">
-               ¿No tienes una cuenta? {''}
-                <Link to="/auth/register" className="underline underline-offset-4">
-                  Registrarse
-                </Link>
-              </div>
             </div>
           </form>
           <div className="relative hidden bg-muted md:block">
@@ -89,4 +86,3 @@ export const LoginPage = () => {
     </div>
   )
 }
-

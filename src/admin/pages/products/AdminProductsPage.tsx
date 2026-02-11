@@ -1,4 +1,4 @@
-import { AdminTitle } from "@/admin/components/AdminTitle"
+﻿import { AdminTitle } from "@/admin/components/AdminTitle"
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading"
 import { CustomPagination } from "@/components/custom/CustomPagination"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ export const AdminProductsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Producto eliminado con exito');
+      toast.success('Producto eliminado con éxito');
     },
     onError: (error) => {
       console.error('Error al eliminar producto', error);
@@ -33,7 +33,7 @@ export const AdminProductsPage = () => {
   })
 
   const handleDelete = async (productId: string) => {
-    const confirmDelete = window.confirm('¿Seguro que quieres eliminar este producto?');
+    const confirmDelete = window.confirm('Â¿Seguro que quieres eliminar este producto?');
     if (!confirmDelete) return;
 
     await deleteMutation.mutateAsync(productId);

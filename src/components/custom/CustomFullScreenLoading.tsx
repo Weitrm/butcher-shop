@@ -1,4 +1,4 @@
-
+﻿
 export const CustomFullScreenLoading = () => {
   return (
     <div className="flex items-center justify-center h-screen">

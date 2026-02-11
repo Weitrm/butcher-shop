@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -85,7 +85,7 @@ export const OrderPage = () => {
                     <div>
                       <h2 className="text-lg font-semibold">Tu pedido</h2>
                       <p className="text-sm text-muted-foreground">
-                        Maximo 10 kg y 2 productos distintos.
+                        Máximo 10 kg y 2 productos distintos.
                       </p>
                     </div>
                     <Button
@@ -188,7 +188,7 @@ export const OrderPage = () => {
                   <CardContent className="p-6 space-y-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h2 className="text-lg font-semibold">Ultimo pedido</h2>
+                        <h2 className="text-lg font-semibold">Último pedido</h2>
                         <p className="text-sm text-muted-foreground">
                           #{latestOrder.id.slice(0, 8)}
                         </p>
@@ -252,7 +252,7 @@ export const OrderPage = () => {
               <CardContent className="p-6 space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold">Ultimo pedido</h2>
+                    <h2 className="text-lg font-semibold">Último pedido</h2>
                     <p className="text-sm text-muted-foreground">
                       #{latestOrder.id.slice(0, 8)}
                     </p>

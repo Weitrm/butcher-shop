@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Plus, UserPlus, FileText, Settings, Download, Upload } from 'lucide-react';
 
 const QuickActions: React.FC = () => {

@@ -1,5 +1,5 @@
-import { Search, ShoppingBag } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
+﻿import { Search, ShoppingBag } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export const CustomHeader = () => {
   
   const [searchParams, setSearchParams] = useSearchParams();
   const { authStatus, isAdmin, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   const inputRef = useRef<HTMLInputElement>(null);
   const query = searchParams.get('query') || '';
@@ -31,6 +32,11 @@ export const CustomHeader = () => {
       newSearchParams.set('query', inputRef.current!.value);
     }
     setSearchParams(newSearchParams);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth/login');
   };
 
   return <header className="sticky top-0 z-50 w-full border-b backdrop-blur bg-slate-50">
@@ -99,7 +105,7 @@ export const CustomHeader = () => {
                   variant='outline'
                   size='sm'
                   className="ml-2"
-                  onClick={logout}
+                  onClick={handleLogout}
                 >
                   Cerrar sesión
                 </Button>

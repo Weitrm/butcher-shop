@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+﻿import { useState, type CSSProperties } from "react";
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -83,7 +83,7 @@ export const AdminOrdersPage = () => {
 
   return (
     <>
-      <AdminTitle title="Ordenes" subtitle="Pedidos de la semana" />
+      <AdminTitle title="Órdenes" subtitle="Pedidos de la semana" />
 
       <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
@@ -130,7 +130,20 @@ export const AdminOrdersPage = () => {
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">{order.user?.fullName || "Sin nombre"}</span>
-                    <span className="text-xs text-gray-500">{order.user?.email || "-"}</span>
+                    <span className="text-xs text-gray-500">
+                      {order.user
+                        ? [
+                            order.user.employeeNumber
+                              ? `Func. ${order.user.employeeNumber}`
+                              : null,
+                            order.user.nationalId
+                              ? `CI ${order.user.nationalId}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" Â· ") || "-"
+                        : "-"}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>

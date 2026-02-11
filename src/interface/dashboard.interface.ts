@@ -39,7 +39,8 @@ export interface DashboardRecentOrder {
   user: {
     id: string;
     fullName: string;
-    email: string;
+    employeeNumber: string;
+    nationalId: string;
   } | null;
   items: DashboardRecentOrderItem[];
 }
