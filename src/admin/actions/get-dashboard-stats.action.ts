@@ -5,12 +5,14 @@ interface Options {
   query?: string;
   limit?: number;
   offset?: number;
+  range?: "week" | "month" | "year";
 }
 
 export const getDashboardStatsAction = async ({
   query,
   limit,
   offset,
+  range,
 }: Options): Promise<DashboardStats> => {
   const { data } = await butcherApi.get<DashboardStats>(
     "/orders/admin/dashboard",
@@ -19,6 +21,7 @@ export const getDashboardStatsAction = async ({
         q: query || undefined,
         limit,
         offset,
+        range,
       },
     },
   );

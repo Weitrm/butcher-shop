@@ -14,6 +14,12 @@ export interface DashboardOrderCounts {
   month: number;
 }
 
+export interface DashboardActivityPoint {
+  date: string;
+  totalKg: number;
+  totalOrders: number;
+}
+
 export interface DashboardRecentOrderItem {
   id: string;
   kg: number;
@@ -40,6 +46,7 @@ export interface DashboardRecentOrder {
 
 export interface DashboardStats {
   orderCounts: DashboardOrderCounts;
+  activity: DashboardActivityPoint[];
   topProducts: DashboardTopProduct[];
   topProductsCount: number;
   topProductsPages: number;

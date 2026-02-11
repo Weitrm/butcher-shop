@@ -11,6 +11,7 @@ import { DashboardPage } from "./admin/pages/dashboard/DashboardPage";
 import { AdminProductsPage } from "./admin/pages/products/AdminProductsPage";
 import { AdminProductPage } from "./admin/pages/product/AdminProductPage";
 import { AdminOrdersPage } from "./admin/pages/orders/AdminOrdersPage";
+import { AdminOrdersHistoryPage } from "./admin/pages/history/AdminOrdersHistoryPage";
 import { HistoryPage } from "./shop/pages/history/HistoryPage";
 import { AdminRoute, AuthenticatedRoute, NotAuthenticatedRoute } from "./components/routes/ProtectedRoutes";
 
@@ -100,6 +101,10 @@ export const appRouter = createHashRouter([
             {
                 path: 'orders',
                 element: <AdminOrdersPage />
+            },
+            {
+                path: 'history',
+                element: <AdminOrdersHistoryPage />
             },
         ]
     },

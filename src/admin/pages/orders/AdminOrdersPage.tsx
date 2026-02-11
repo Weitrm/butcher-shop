@@ -37,7 +37,7 @@ const formatDate = (value: string) =>
   });
 
 export const AdminOrdersPage = () => {
-  const { data, isLoading } = useAdminOrders();
+  const { data, isLoading } = useAdminOrders({ scope: "week" });
   const orders = data?.orders || [];
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -61,6 +61,8 @@ export const AdminOrdersPage = () => {
     try {
       await mutation.mutateAsync({ orderId, status });
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Estado actualizado");
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -81,7 +83,7 @@ export const AdminOrdersPage = () => {
 
   return (
     <>
-      <AdminTitle title="Ordenes" subtitle="Gestion de pedidos" />
+      <AdminTitle title="Ordenes" subtitle="Pedidos de la semana" />
 
       <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">

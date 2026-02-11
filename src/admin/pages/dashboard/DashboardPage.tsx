@@ -1,15 +1,24 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Search, ShoppingCart } from "lucide-react";
 import { useSearchParams } from "react-router";
 
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import { useDashboardStats } from "@/admin/hooks/useDashboardStats";
 import { CustomPagination } from "@/components/custom/CustomPagination";
+import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -17,25 +26,41 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
+const statusStyles: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  completed: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
+};
+
 const formatDate = (value: string) =>
-  new Date(value).toLocaleString("es-AR", {
+  new Date(value).toLocaleString("es-UY", {
     dateStyle: "medium",
     timeStyle: "short",
   });
+
+const rangeOptions = [
+  { value: "week", label: "Semana" },
+  { value: "month", label: "Mes" },
+  { value: "year", label: "Año" },
+] as const;
 
 export const DashboardPage = () => {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const pageParam = searchParams.get("page") || "1";
+  const rangeParam = searchParams.get("range") || "week";
   const parsedPage = Number(pageParam);
   const page = Number.isNaN(parsedPage) ? 1 : Math.max(1, parsedPage);
+  const range =
+    rangeParam === "month" || rangeParam === "year" ? rangeParam : "week";
   const limit = 5;
   const offset = (page - 1) * limit;
   const { data, isLoading, isFetching } = useDashboardStats({
     query: debouncedQuery,
     limit,
     offset,
+    range,
   });
 
   useEffect(() => {
@@ -61,6 +86,48 @@ export const DashboardPage = () => {
   const topProductsPages = data?.topProductsPages || 0;
   const recentOrders = data?.recentOrders || [];
   const orderCounts = data?.orderCounts || { day: 0, week: 0, month: 0 };
+  const chartConfig = {
+    totalKg: {
+      label: "Kg",
+      color: "var(--chart-1)",
+    },
+    totalOrders: {
+      label: "Pedidos",
+      color: "var(--chart-2)",
+    },
+  } satisfies ChartConfig;
+  const isYearRange = range === "year";
+  const activityData = (data?.activity || []).map((entry) => {
+    const parsedDate = isYearRange
+      ? new Date(`${entry.date}-01T00:00:00`)
+      : new Date(`${entry.date}T00:00:00`);
+    return {
+      ...entry,
+      label: parsedDate.toLocaleDateString("es-AR", {
+        month: isYearRange ? "long" : undefined,
+        year: isYearRange ? "numeric" : undefined,
+        dateStyle: isYearRange ? undefined : "medium",
+      }),
+      shortLabel: parsedDate.toLocaleDateString(
+        "es-UY",
+        isYearRange
+          ? { month: "short", year: "2-digit" }
+          : { day: "2-digit", month: "short" },
+      ),
+    };
+  });
+  const rangeHint =
+    range === "year"
+      ? "Ultimos 12 meses."
+      : range === "month"
+        ? "Ultimos 30 dias."
+        : "Ultimos 7 dias.";
+
+  const handleRangeChange = (nextRange: "week" | "month" | "year") => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("range", nextRange);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <>
@@ -87,8 +154,77 @@ export const DashboardPage = () => {
         </Card>
       </div>
 
+      <Card className="mb-8">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Tendencia de demanda
+              </h3>
+              <p className="text-sm text-gray-500">
+                {rangeHint} Kg vendidos y pedidos por periodo.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+              {rangeOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  size="sm"
+                  variant={range === option.value ? "default" : "ghost"}
+                  className={
+                    range === option.value
+                      ? "bg-gray-900 text-white hover:bg-gray-900"
+                      : "text-gray-600"
+                  }
+                  onClick={() => handleRangeChange(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <ChartContainer config={chartConfig} className="h-[260px] w-full">
+            <ComposedChart data={activityData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="shortLabel" tickLine={false} axisLine={false} />
+              <YAxis
+                yAxisId="left"
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend verticalAlign="top" align="right" />
+              <Bar
+                yAxisId="left"
+                dataKey="totalKg"
+                name="Kg"
+                fill="var(--color-totalKg)"
+                radius={[6, 6, 0, 0]}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="totalOrders"
+                name="Pedidos"
+                stroke="var(--color-totalOrders)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+            </ComposedChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-blue-100">
+        <Card className="lg:col-span-2">
           <CardContent className="p-6 space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -175,7 +311,11 @@ export const DashboardPage = () => {
                           {order.user?.fullName || "Cliente"}
                         </p>
                       </div>
-                      <span className="text-xs font-medium text-gray-600">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                          statusStyles[order.status] || "bg-gray-100 text-gray-600"
+                        }`}
+                      >
                         {statusLabels[order.status] || order.status}
                       </span>
                     </div>
@@ -190,7 +330,7 @@ export const DashboardPage = () => {
                     <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                       <span>{formatDate(order.createdAt)}</span>
                       <span className="font-semibold text-gray-900">
-                        {currencyFormatter(order.totalPrice)} · {order.totalKg} kg
+                        {currencyFormatter(order.totalPrice)} - {order.totalKg} kg
                       </span>
                     </div>
                   </div>
@@ -203,3 +343,4 @@ export const DashboardPage = () => {
     </>
   )
 }
+

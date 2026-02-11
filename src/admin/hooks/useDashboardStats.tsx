@@ -5,12 +5,18 @@ interface Options {
   query: string;
   limit: number;
   offset: number;
+  range?: "week" | "month" | "year";
 }
 
-export const useDashboardStats = ({ query, limit, offset }: Options) =>
+export const useDashboardStats = ({
+  query,
+  limit,
+  offset,
+  range = "week",
+}: Options) =>
   useQuery({
-    queryKey: ["admin-dashboard", { query, limit, offset }],
-    queryFn: () => getDashboardStatsAction({ query, limit, offset }),
+    queryKey: ["admin-dashboard", { query, limit, offset, range }],
+    queryFn: () => getDashboardStatsAction({ query, limit, offset, range }),
     staleTime: 1000 * 60,
     placeholderData: keepPreviousData,
   });
