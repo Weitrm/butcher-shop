@@ -14,16 +14,18 @@ const queryClient = new QueryClient()
 
 const CheckAuthProvider = ({children}: PropsWithChildren) => {
   const {checkAuthStatus} = useAuthStore();
+  const hasToken = !!localStorage.getItem('token');
   
   const {isLoading} = useQuery({
     queryKey: ['auth'],
     queryFn: checkAuthStatus,
     retry: false,
-    refetchInterval: 1000 * 60 * 1.5,
-    refetchOnWindowFocus: true,
+    enabled: hasToken,
+    refetchInterval: hasToken ? 1000 * 60 * 1.5 : false,
+    refetchOnWindowFocus: hasToken,
   })
 
-  if (isLoading) {
+  if (hasToken && isLoading) {
     return <CustomFullScreenLoading />
   }
 
