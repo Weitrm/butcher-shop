@@ -2,7 +2,7 @@
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Trash } from "lucide-react";
+import { AlertTriangle, Trash } from "lucide-react";
 
 import { CustomJumbotron } from "@/shop/components/CustomJumbotron";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { createOrderAction } from "@/shop/actions/create-order.action";
 import { useOrders } from "@/shop/hooks/useOrders";
 import { useCartStore } from "@/shop/store/cart.store";
+import { useAuthStore } from "@/auth/store/auth.store";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -35,6 +36,11 @@ export const OrderPage = () => {
   const updateItemKg = useCartStore((state) => state.updateItemKg);
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
+  const { user, authStatus } = useAuthStore((state) => ({
+    user: state.user,
+    authStatus: state.authStatus,
+  }));
+  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive;
 
   const { data, isLoading: isOrdersLoading } = useOrders({
     limit: 1,
@@ -43,6 +49,7 @@ export const OrderPage = () => {
   const latestOrder = data?.orders[0];
 
   const handleConfirm = async () => {
+    if (isOrderingDisabled) return;
     if (!items.length) return;
     setIsSubmitting(true);
 
@@ -77,6 +84,17 @@ export const OrderPage = () => {
 
       <section className="py-10 px-4 lg:px-8">
         <div className="container mx-auto max-w-3xl space-y-6">
+          {isOrderingDisabled && (
+            <Card className="border-amber-200 bg-amber-50 text-amber-900">
+              <CardContent className="flex items-start gap-2 p-4 text-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4" />
+                <div>
+                  Tu cuenta esta deshabilitada para hacer pedidos. Comunicate con
+                  un supervisor.
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {items.length > 0 ? (
             <>
               <Card>
@@ -92,7 +110,7 @@ export const OrderPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={clear}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isOrderingDisabled}
                     >
                       Limpiar
                     </Button>
@@ -146,12 +164,13 @@ export const OrderPage = () => {
                             }}
                             className="h-9 w-24"
                             aria-label={`Kg para ${item.name}`}
+                            disabled={isOrderingDisabled}
                           />
                           <Button
                             variant="outline"
                             size="icon"
                             onClick={() => removeItem(item.productId)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isOrderingDisabled}
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
@@ -173,7 +192,7 @@ export const OrderPage = () => {
                     </div>
                   </div>
 
-                  <Button onClick={handleConfirm} disabled={isSubmitting}>
+                  <Button onClick={handleConfirm} disabled={isSubmitting || isOrderingDisabled}>
                     Confirmar pedido
                   </Button>
                 </CardContent>

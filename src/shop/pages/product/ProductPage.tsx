@@ -7,6 +7,7 @@ import { ProductCard } from "@/shop/components/ProductCart"
 import { useProduct } from "@/shop/hooks/useProduct"
 import { useProducts } from "@/shop/hooks/useProducts"
 import { useCartStore } from "@/shop/store/cart.store"
+import { useAuthStore } from "@/auth/store/auth.store"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -32,6 +33,11 @@ export const ProductPage = () => {
 
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((state) => state.addItem)
+  const { user, authStatus } = useAuthStore((state) => ({
+    user: state.user,
+    authStatus: state.authStatus,
+  }))
+  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive
 
 
   if (isLoading) {
@@ -127,6 +133,7 @@ export const ProductPage = () => {
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                    disabled={isOrderingDisabled}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -137,6 +144,7 @@ export const ProductPage = () => {
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity((prev) => Math.min(10, prev + 1))}
+                    disabled={isOrderingDisabled}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -147,6 +155,7 @@ export const ProductPage = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 className="flex-1"
+                disabled={isOrderingDisabled}
                 onClick={() => {
                   const result = addItem({
                     productId: product.id,

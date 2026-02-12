@@ -15,8 +15,9 @@ export const CustomHeader = () => {
   const cartTotalKg = useCartStore((state) => state.getTotalKg());
   
   const [searchParams, setSearchParams] = useSearchParams();
-  const { authStatus, isAdmin, logout } = useAuthStore();
+  const { authStatus, isAdmin, logout, user } = useAuthStore();
   const navigate = useNavigate();
+  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const query = searchParams.get('query') || '';
@@ -52,9 +53,15 @@ export const CustomHeader = () => {
             )}>
               Inicio
             </Link>
-            <Link to="/pedidos" className="text-sm font-medium transition-colors hover:text-primary">
-              Pedido
-            </Link>
+            {isOrderingDisabled ? (
+              <span className="text-sm font-medium text-muted-foreground cursor-not-allowed">
+                Pedido
+              </span>
+            ) : (
+              <Link to="/pedidos" className="text-sm font-medium transition-colors hover:text-primary">
+                Pedido
+              </Link>
+            )}
             <Link to="/historial" className="text-sm font-medium transition-colors hover:text-primary">
               Historial
             </Link>
@@ -79,14 +86,20 @@ export const CustomHeader = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            <Button variant="ghost" size="icon" className="relative" asChild>
-              <Link to="/pedidos">
+            {isOrderingDisabled ? (
+              <Button variant="ghost" size="icon" className="relative" disabled>
                 <ShoppingBag className="h-5 w-5" />
-                {cartTotalKg > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                    {cartTotalKg}
-                  </span>}
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" className="relative" asChild>
+                <Link to="/pedidos">
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartTotalKg > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                      {cartTotalKg}
+                    </span>}
+                </Link>
+              </Button>
+            )}
 
             {
               authStatus === 'not-authenticated' ?( 

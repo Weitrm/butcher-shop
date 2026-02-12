@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/shop/store/cart.store";
+import { useAuthStore } from "@/auth/store/auth.store";
 
 interface ProductCardProps {
   id: string;
@@ -17,6 +18,11 @@ interface ProductCardProps {
 export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
   const [kg, setKg] = useState(1);
   const addItem = useCartStore((state) => state.addItem);
+  const { user, authStatus } = useAuthStore((state) => ({
+    user: state.user,
+    authStatus: state.authStatus,
+  }));
+  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive;
 
   const handleKgChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -78,11 +84,13 @@ export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
                 onChange={handleKgChange}
                 className="h-8 w-20 text-sm"
                 aria-label={`Kg para ${name}`}
+                disabled={isOrderingDisabled}
               />
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleAddToCart}
+                disabled={isOrderingDisabled}
                 className="transition-all duration-300 hover:bg-primary hover:text-primary-foreground border-primary/20 text-xs px-4 py-2 h-8"
               >
                 Agregar
