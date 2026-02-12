@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export const AdminUsersPage = () => {
   const [isPosting, setIsPosting] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(false);
   const queryClient = useQueryClient();
   const { data: users = [], isLoading } = useAdminUsers();
 
@@ -79,60 +80,65 @@ export const AdminUsersPage = () => {
     <>
       <AdminTitle title="Usuarios" subtitle="Crear usuarios desde el panel" />
 
-      <Card className="max-w-2xl">
-        <CardContent className="p-6">
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className="grid gap-2">
-              <Label htmlFor="fullName">Nombre completo</Label>
-              <Input
-                id="fullName"
-                name="fullName"
-                type="text"
-                placeholder="Nombre completo"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="employeeNumber">Número de funcionario</Label>
-              <Input
-                id="employeeNumber"
-                name="employeeNumber"
-                type="text"
-                placeholder="Ej: 1024"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="nationalId">Cédula</Label>
-              <Input
-                id="nationalId"
-                name="nationalId"
-                type="text"
-                placeholder="Ej: 12345678"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Contraseña segura"
-                required
-              />
-              <p className="text-xs text-gray-500">
-                Debe contener solo números (6 a 20 dígitos).
-              </p>
-            </div>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isPosting}>
-                {isPosting ? "Creando..." : "Crear usuario"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mb-4 flex justify-end">
+        <Button type="button" onClick={() => setIsFormVisible((prev) => !prev)}>
+          {isFormVisible ? "Ocultar formulario" : "Nuevo usuario"}
+        </Button>
+      </div>
+
+      {isFormVisible && (
+        <Card className="max-w-2xl">
+          <CardContent className="p-6">
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              <div className="grid gap-2">
+                <Label htmlFor="fullName">Nombre completo</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  placeholder="Nombre completo"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="employeeNumber">Número de funcionario</Label>
+                <Input
+                  id="employeeNumber"
+                  name="employeeNumber"
+                  type="text"
+                  placeholder="Ej: 1024"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="nationalId">Cédula</Label>
+                <Input
+                  id="nationalId"
+                  name="nationalId"
+                  type="text"
+                  placeholder="Ej: 12345678"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Contraseña"
+                  required
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button type="submit" disabled={isPosting}>
+                  {isPosting ? "Creando..." : "Crear usuario"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardContent className="p-0">
