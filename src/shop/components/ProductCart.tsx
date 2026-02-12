@@ -20,7 +20,8 @@ export const ProductCard = ({ id, name, price, image }: ProductCardProps) => {
   const addItem = useCartStore((state) => state.addItem);
   const user = useAuthStore((state) => state.user);
   const authStatus = useAuthStore((state) => state.authStatus);
-  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive;
+  const isOrderingDisabled =
+    authStatus === "authenticated" && !!user && user.isActive === false;
 
   const handleKgChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;

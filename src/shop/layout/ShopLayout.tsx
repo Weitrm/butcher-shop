@@ -7,7 +7,8 @@ import { useAuthStore } from "@/auth/store/auth.store"
 export const ShopLayout = () => {
   const user = useAuthStore((state) => state.user)
   const authStatus = useAuthStore((state) => state.authStatus)
-  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive
+  const isOrderingDisabled =
+    authStatus === "authenticated" && !!user && user.isActive === false
 
   return (
     <div className="min-h-screen bg-background">

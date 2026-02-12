@@ -17,7 +17,8 @@ export const CustomHeader = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { authStatus, isAdmin, logout, user } = useAuthStore();
   const navigate = useNavigate();
-  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive;
+  const isOrderingDisabled =
+    authStatus === "authenticated" && !!user && user.isActive === false;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const query = searchParams.get('query') || '';

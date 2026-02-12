@@ -35,7 +35,8 @@ export const ProductPage = () => {
   const addItem = useCartStore((state) => state.addItem)
   const user = useAuthStore((state) => state.user)
   const authStatus = useAuthStore((state) => state.authStatus)
-  const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive
+  const isOrderingDisabled =
+    authStatus === "authenticated" && !!user && user.isActive === false
 
 
   if (isLoading) {
