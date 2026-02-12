@@ -141,7 +141,7 @@ export const AdminOrdersPage = () => {
                               : null,
                           ]
                             .filter(Boolean)
-                            .join(" Â· ") || "-"
+                            .join(" - ") || "-"
                         : "-"}
                     </span>
                   </div>
