@@ -36,10 +36,8 @@ export const OrderPage = () => {
   const updateItemKg = useCartStore((state) => state.updateItemKg);
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
-  const { user, authStatus } = useAuthStore((state) => ({
-    user: state.user,
-    authStatus: state.authStatus,
-  }));
+  const user = useAuthStore((state) => state.user);
+  const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled = authStatus === "authenticated" && user && !user.isActive;
 
   const { data, isLoading: isOrdersLoading } = useOrders({
