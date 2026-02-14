@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -14,6 +14,7 @@ import { validateCreateUser, validatePassword } from "../utils/userValidators";
 // Controlador de estado y acciones para la página de usuarios admin.
 export const useAdminUsersController = () => {
   const [isPosting, setIsPosting] = useState(false);
+  const isPostingRef = useRef(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const [updatingStatusUserId, setUpdatingStatusUserId] = useState<string | null>(null);
@@ -32,38 +33,42 @@ export const useAdminUsersController = () => {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isPosting) return;
+    if (isPostingRef.current || isPosting) return;
 
+    const formElement = event.currentTarget;
+    isPostingRef.current = true;
     setIsPosting(true);
 
-    const formData = new FormData(event.currentTarget);
-    const fullName = (formData.get("fullName") as string) || "";
-    const employeeNumber = (formData.get("employeeNumber") as string) || "";
-    const nationalId = (formData.get("nationalId") as string) || "";
-    const password = (formData.get("password") as string) || "";
-
-    const errorMessage = validateCreateUser(
-      fullName,
-      employeeNumber,
-      nationalId,
-      password,
-    );
-    if (errorMessage) {
-      toast.error(errorMessage);
-      setIsPosting(false);
-      return;
-    }
-
     try {
+      const formData = new FormData(formElement);
+      const fullName = (formData.get("fullName") as string) || "";
+      const employeeNumber = (formData.get("employeeNumber") as string) || "";
+      const nationalId = (formData.get("nationalId") as string) || "";
+      const password = (formData.get("password") as string) || "";
+
+      const errorMessage = validateCreateUser(
+        fullName,
+        employeeNumber,
+        nationalId,
+        password,
+      );
+      if (errorMessage) {
+        toast.error(errorMessage);
+        return;
+      }
+
       await registerAction(fullName, employeeNumber, nationalId, password);
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+
       toast.success("Usuario creado correctamente");
-      event.currentTarget.reset();
+      formElement.reset();
       setIsFormVisible(false);
     } catch (error) {
       toastAxiosError(error, "No se pudo crear el usuario");
     } finally {
       setIsPosting(false);
+      isPostingRef.current = false;
     }
   };
 

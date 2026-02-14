@@ -24,7 +24,7 @@ export const CreateUserToggle = ({ isOpen, onToggle }: CreateUserToggleProps) =>
     ) : (
       <>
         <UserPlus className="h-4 w-4" />
-        Nuevo usuario
+        Nuevo funcionario
       </>
     )}
   </Button>

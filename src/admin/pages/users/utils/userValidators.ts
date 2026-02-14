@@ -17,5 +17,8 @@ export const validateCreateUser = (
   if (!fullName.trim()) return "El nombre completo es requerido";
   if (!employeeNumber.trim()) return "El número de funcionario es requerido";
   if (!nationalId.trim()) return "La cédula es requerida";
+  if (!/^\d+$/.test(employeeNumber))
+    return "El número de funcionario debe contener solo números";
+  if (!/^\d+$/.test(nationalId)) return "La cédula debe contener solo números";
   return validatePassword(password);
 };

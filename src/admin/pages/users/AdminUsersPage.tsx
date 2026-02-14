@@ -47,6 +47,7 @@ export const AdminUsersPage = () => {
         isVisible={isFormVisible}
         isSubmitting={isPosting}
         onSubmit={handleSubmit}
+        onClose={() => setIsFormVisible(false)}
       />
 
       <UsersTable
