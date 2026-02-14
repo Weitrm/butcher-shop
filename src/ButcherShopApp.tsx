@@ -1,5 +1,5 @@
-﻿import type { PropsWithChildren } from "react"
-import {RouterProvider } from "react-router"
+import { Suspense, type PropsWithChildren } from "react"
+import { RouterProvider } from "react-router"
 import { appRouter } from "./app.router"
 
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
@@ -12,12 +12,12 @@ import { useAuthStore } from "./auth/store/auth.store"
 
 const queryClient = new QueryClient()
 
-const CheckAuthProvider = ({children}: PropsWithChildren) => {
-  const {checkAuthStatus} = useAuthStore();
-  const hasToken = !!localStorage.getItem('token');
-  
-  const {isLoading} = useQuery({
-    queryKey: ['auth'],
+const CheckAuthProvider = ({ children }: PropsWithChildren) => {
+  const { checkAuthStatus } = useAuthStore()
+  const hasToken = !!localStorage.getItem("token")
+
+  const { isLoading } = useQuery({
+    queryKey: ["auth"],
     queryFn: checkAuthStatus,
     retry: false,
     enabled: hasToken,
@@ -29,25 +29,23 @@ const CheckAuthProvider = ({children}: PropsWithChildren) => {
     return <CustomFullScreenLoading />
   }
 
-
-  return children;  
+  return children
 }
 
 export const ButcherShopApp = () => {
-
-
-
   return (
     <div>
       <QueryClientProvider client={queryClient}>
-      <Toaster />
+        <Toaster />
 
-      {/* CUSTOM PROVIDER */}
-      <CheckAuthProvider>
-        <RouterProvider router={appRouter} />
-      </CheckAuthProvider>
-      
-      <ReactQueryDevtools initialIsOpen={false} />
+        {/* CUSTOM PROVIDER */}
+        <CheckAuthProvider>
+          <Suspense fallback={<CustomFullScreenLoading />}>
+            <RouterProvider router={appRouter} />
+          </Suspense>
+        </CheckAuthProvider>
+
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </div>
   )

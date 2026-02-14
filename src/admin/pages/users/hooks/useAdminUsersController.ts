@@ -11,6 +11,7 @@ import { registerAction } from "@/auth/actions/register.action";
 import { toastAxiosError } from "../utils/toastAxiosError";
 import { validateCreateUser, validatePassword } from "../utils/userValidators";
 
+// Controlador de estado y acciones para la página de usuarios admin.
 export const useAdminUsersController = () => {
   const [isPosting, setIsPosting] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);

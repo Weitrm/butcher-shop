@@ -11,6 +11,7 @@ type CreateUserFormCardProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
+// Tarjeta con el formulario para crear un usuario.
 export const CreateUserFormCard = ({
   isVisible,
   isSubmitting,

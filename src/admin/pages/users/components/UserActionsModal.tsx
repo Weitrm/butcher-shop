@@ -19,6 +19,7 @@ type UserActionsModalProps = {
   onClose: () => void;
 };
 
+// Modal con acciones de usuario: estado, contraseña y eliminación.
 export const UserActionsModal = ({
   user,
   password,

@@ -12,6 +12,7 @@ type UserRowProps = {
   onOpenActions: (userId: string) => void;
 };
 
+// Fila individual de usuario con disparador de acciones.
 export const UserRow = ({ user, isMenuOpen, onOpenActions }: UserRowProps) => (
   <TableRow>
     <TableCell className="font-medium">{user.fullName}</TableCell>

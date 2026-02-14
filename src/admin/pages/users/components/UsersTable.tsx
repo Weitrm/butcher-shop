@@ -10,6 +10,7 @@ type UsersTableProps = {
   onOpenActions: (userId: string) => void;
 };
 
+// Tabla para listar usuarios y abrir el menú de acciones.
 export const UsersTable = ({ users, openMenuUserId, onOpenActions }: UsersTableProps) => (
   <Card className="mt-6">
     <CardContent className="p-0">

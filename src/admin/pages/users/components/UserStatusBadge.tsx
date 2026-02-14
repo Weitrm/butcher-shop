@@ -2,6 +2,7 @@ type UserStatusBadgeProps = {
   isActive: boolean;
 };
 
+// Badge de estado para usuarios activos/inactivos.
 export const UserStatusBadge = ({ isActive }: UserStatusBadgeProps) => (
   <span
     className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${

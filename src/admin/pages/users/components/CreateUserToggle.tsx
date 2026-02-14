@@ -7,6 +7,7 @@ type CreateUserToggleProps = {
   onToggle: () => void;
 };
 
+// Botón para mostrar u ocultar el formulario de creación.
 export const CreateUserToggle = ({ isOpen, onToggle }: CreateUserToggleProps) => (
   <Button
     type="button"

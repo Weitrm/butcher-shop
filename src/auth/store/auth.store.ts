@@ -8,6 +8,7 @@ import { useCartStore } from '@/shop/store/cart.store';
 
 const CART_STORAGE_KEY = 'butcher-cart';
 const CART_USER_KEY = 'butcher-cart-user';
+const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
 const syncCartOwner = (userId?: string | null) => {
     if (!userId) return;
@@ -55,8 +56,8 @@ type AuthState = {
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
     user: null,
-    token: null,
-    authStatus: 'checking',
+    token: storedToken,
+    authStatus: storedToken ? 'checking' : 'not-authenticated',
     lastError: null,
 
 

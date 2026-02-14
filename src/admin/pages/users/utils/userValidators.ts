@@ -1,3 +1,4 @@
+// Valida la contraseña para reglas numéricas y longitud.
 export const validatePassword = (password: string) => {
   if (!password) return "La contraseña es requerida";
   if (!/^\d+$/.test(password)) return "La contraseña debe contener solo números";
@@ -6,6 +7,7 @@ export const validatePassword = (password: string) => {
   return null;
 };
 
+// Valida los campos del formulario de creación.
 export const validateCreateUser = (
   fullName: string,
   employeeNumber: string,
