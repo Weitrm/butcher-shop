@@ -2,6 +2,7 @@
 
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
+import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,8 @@ import { useAdminUsersController } from "./hooks/useAdminUsersController";
 
 export const AdminUsersPage = () => {
   const {
-    filteredUsers,
+    paginatedUsers,
+    totalPages,
     searchQuery,
     setSearchQuery,
     isLoading,
@@ -90,11 +92,17 @@ export const AdminUsersPage = () => {
       />
 
       <UsersTable
-        users={filteredUsers}
+        users={paginatedUsers}
         openMenuUserId={openMenuUserId}
         onOpenActions={(userId) => setOpenMenuUserId(userId)}
         emptyMessage={emptyMessage}
       />
+
+      {totalPages > 1 && (
+        <div className="mt-2">
+          <CustomPagination totalPages={totalPages} />
+        </div>
+      )}
 
       {openMenuUserId && selectedUser && (
         <UserActionsModal
@@ -115,6 +123,10 @@ export const AdminUsersPage = () => {
     </>
   );
 };
+
+
+
+
 
 
 

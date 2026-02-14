@@ -1,6 +1,7 @@
-﻿import { useMemo, useRef, useState, type FormEvent } from "react";
+﻿import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
 
 import { useAdminUsers } from "@/admin/hooks/useAdminUsers";
 import { updateUserStatusAction } from "@/admin/actions/update-user-status.action";
@@ -11,6 +12,8 @@ import { useAuthStore } from "@/auth/store/auth.store";
 
 import { toastAxiosError } from "../utils/toastAxiosError";
 import { validateCreateUser, validatePassword } from "../utils/userValidators";
+
+const USERS_PAGE_SIZE = 10;
 
 // Controlador de estado y acciones para la pÃ¡gina de usuarios admin.
 export const useAdminUsersController = () => {
@@ -28,6 +31,11 @@ export const useAdminUsersController = () => {
   const queryClient = useQueryClient();
   const { data: users = [], isLoading } = useAdminUsers();
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageParam = searchParams.get("page") || "1";
+  const parsedPage = Number(pageParam);
+  const page = Number.isNaN(parsedPage) ? 1 : parsedPage;
+  const previousQueryRef = useRef(searchQuery);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === openMenuUserId) || null,
@@ -50,6 +58,31 @@ export const useAdminUsersController = () => {
       return haystack.includes(normalizedQuery);
     });
   }, [users, normalizedQuery]);
+  const totalPages = Math.ceil(filteredUsers.length / USERS_PAGE_SIZE);
+  const paginatedUsers = useMemo(() => {
+    if (!filteredUsers.length) return [];
+    const maxPage = totalPages > 0 ? totalPages : 1;
+    const safePage = Math.min(Math.max(page, 1), maxPage);
+    const start = (safePage - 1) * USERS_PAGE_SIZE;
+    return filteredUsers.slice(start, start + USERS_PAGE_SIZE);
+  }, [filteredUsers, page, totalPages]);
+
+  useEffect(() => {
+    if (previousQueryRef.current === searchQuery) return;
+    previousQueryRef.current = searchQuery;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "1");
+    setSearchParams(nextParams);
+  }, [searchQuery, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const maxPage = totalPages > 0 ? totalPages : 1;
+    const nextPage = Math.min(Math.max(page, 1), maxPage);
+    if (nextPage === page) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", nextPage.toString());
+    setSearchParams(nextParams);
+  }, [page, totalPages, searchParams, setSearchParams]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -161,6 +194,8 @@ export const useAdminUsersController = () => {
   return {
     users,
     filteredUsers,
+    paginatedUsers,
+    totalPages,
     searchQuery,
     setSearchQuery,
     isLoading,
@@ -181,6 +216,14 @@ export const useAdminUsersController = () => {
     handleDeleteUser,
   };
 };
+
+
+
+
+
+
+
+
 
 
 
