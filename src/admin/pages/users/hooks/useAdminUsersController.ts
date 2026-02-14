@@ -17,6 +17,7 @@ export const useAdminUsersController = () => {
   const [isPosting, setIsPosting] = useState(false);
   const isPostingRef = useRef(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const [updatingStatusUserId, setUpdatingStatusUserId] = useState<string | null>(null);
   const [updatingPasswordUserId, setUpdatingPasswordUserId] = useState<string | null>(
@@ -32,6 +33,23 @@ export const useAdminUsersController = () => {
     () => users.find((user) => user.id === openMenuUserId) || null,
     [openMenuUserId, users],
   );
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredUsers = useMemo(() => {
+    if (!normalizedQuery) return users;
+    return users.filter((user) => {
+      const haystack = [
+        user.fullName,
+        user.employeeNumber,
+        user.nationalId,
+        (user.roles || []).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(normalizedQuery);
+    });
+  }, [users, normalizedQuery]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,7 +126,7 @@ export const useAdminUsersController = () => {
     setUpdatingPasswordUserId(userId);
     try {
       await updateUserPasswordAction(userId, password);
-      toast.success("ContraseÃ±a actualizada correctamente");
+      toast.success("Contraseña actualizada correctamente");
       setPasswordDrafts((prev) => ({ ...prev, [userId]: "" }));
       setOpenMenuUserId(null);
     } catch (error) {
@@ -142,6 +160,9 @@ export const useAdminUsersController = () => {
 
   return {
     users,
+    filteredUsers,
+    searchQuery,
+    setSearchQuery,
     isLoading,
     selectedUser,
     isPosting,
@@ -160,6 +181,9 @@ export const useAdminUsersController = () => {
     handleDeleteUser,
   };
 };
+
+
+
 
 
 

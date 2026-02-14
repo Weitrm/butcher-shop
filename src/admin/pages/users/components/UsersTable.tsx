@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+﻿import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { User } from "@/interface/user.interface";
 
@@ -8,10 +8,16 @@ type UsersTableProps = {
   users: User[];
   openMenuUserId: string | null;
   onOpenActions: (userId: string) => void;
+  emptyMessage?: string;
 };
 
-// Tabla para listar usuarios y abrir el menú de acciones.
-export const UsersTable = ({ users, openMenuUserId, onOpenActions }: UsersTableProps) => (
+// Tabla para listar usuarios y abrir el menÃº de acciones.
+export const UsersTable = ({
+  users,
+  openMenuUserId,
+  onOpenActions,
+  emptyMessage,
+}: UsersTableProps) => (
   <Card className="mt-6">
     <CardContent className="p-0">
       <Table className="bg-white">
@@ -29,7 +35,7 @@ export const UsersTable = ({ users, openMenuUserId, onOpenActions }: UsersTableP
           {users.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} className="text-center text-sm text-gray-500">
-                No hay usuarios registrados.
+                {emptyMessage ?? "No hay usuarios registrados."}
               </TableCell>
             </TableRow>
           ) : (
@@ -47,3 +53,6 @@ export const UsersTable = ({ users, openMenuUserId, onOpenActions }: UsersTableP
     </CardContent>
   </Card>
 );
+
+
+
