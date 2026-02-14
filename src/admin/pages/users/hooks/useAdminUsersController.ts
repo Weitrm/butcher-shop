@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type FormEvent } from "react";
+﻿import { useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -7,11 +7,12 @@ import { updateUserStatusAction } from "@/admin/actions/update-user-status.actio
 import { updateUserPasswordAction } from "@/admin/actions/update-user-password.action";
 import { deleteUserAction } from "@/admin/actions/delete-user.action";
 import { registerAction } from "@/auth/actions/register.action";
+import { useAuthStore } from "@/auth/store/auth.store";
 
 import { toastAxiosError } from "../utils/toastAxiosError";
 import { validateCreateUser, validatePassword } from "../utils/userValidators";
 
-// Controlador de estado y acciones para la página de usuarios admin.
+// Controlador de estado y acciones para la pÃ¡gina de usuarios admin.
 export const useAdminUsersController = () => {
   const [isPosting, setIsPosting] = useState(false);
   const isPostingRef = useRef(false);
@@ -25,6 +26,7 @@ export const useAdminUsersController = () => {
   const [passwordDrafts, setPasswordDrafts] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
   const { data: users = [], isLoading } = useAdminUsers();
+  const currentUserId = useAuthStore((state) => state.user?.id);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === openMenuUserId) || null,
@@ -74,6 +76,10 @@ export const useAdminUsersController = () => {
 
   const handleToggleStatus = async (userId: string, nextStatus: boolean) => {
     if (updatingStatusUserId) return;
+    if (currentUserId && userId === currentUserId) {
+      toast.error("No puedes cambiar el estado de tu propio usuario");
+      return;
+    }
     setUpdatingStatusUserId(userId);
 
     try {
@@ -102,11 +108,11 @@ export const useAdminUsersController = () => {
     setUpdatingPasswordUserId(userId);
     try {
       await updateUserPasswordAction(userId, password);
-      toast.success("Contraseña actualizada correctamente");
+      toast.success("ContraseÃ±a actualizada correctamente");
       setPasswordDrafts((prev) => ({ ...prev, [userId]: "" }));
       setOpenMenuUserId(null);
     } catch (error) {
-      toastAxiosError(error, "No se pudo actualizar la contraseña");
+      toastAxiosError(error, "No se pudo actualizar la contraseÃ±a");
     } finally {
       setUpdatingPasswordUserId(null);
     }
@@ -114,6 +120,10 @@ export const useAdminUsersController = () => {
 
   const handleDeleteUser = async (userId: string) => {
     if (deletingUserId) return;
+    if (currentUserId && userId === currentUserId) {
+      toast.error("No puedes eliminar tu propio usuario");
+      return;
+    }
     const confirmed = window.confirm("¿Eliminar usuario? Esta acción no se puede deshacer.");
     if (!confirmed) return;
 
@@ -150,3 +160,7 @@ export const useAdminUsersController = () => {
     handleDeleteUser,
   };
 };
+
+
+
+
