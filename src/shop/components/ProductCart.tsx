@@ -14,26 +14,41 @@ interface ProductCardProps {
   name: string;
   price: number;
   image: string;
+  isActive: boolean;
+  maxKgPerOrder: number;
+  allowBoxes: boolean;
   initialKg?: number;
 }
+
+const SUPER_MAX_KG = 9999;
 
 export const ProductCard = ({
   id,
   name,
   price,
   image,
+  isActive,
+  maxKgPerOrder,
+  allowBoxes,
   initialKg = 1,
 }: ProductCardProps) => {
-  const [kg, setKg] = useState(() => {
-    const parsed = Number(initialKg);
-    if (!Number.isFinite(parsed)) return 1;
-    return Math.max(0, Math.min(10, Math.floor(parsed)));
-  });
-  const addItem = useCartStore((state) => state.addItem);
   const user = useAuthStore((state) => state.user);
   const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
+  const isSuperUser = Boolean(user?.isSuperUser);
+  const kgLimit = isSuperUser
+    ? SUPER_MAX_KG
+    : Math.max(1, Math.floor(Number(maxKgPerOrder || 1)));
+
+  const [kg, setKg] = useState(() => {
+    const parsed = Number(initialKg);
+    if (!Number.isFinite(parsed)) return 1;
+    return Math.max(0, Math.min(kgLimit, Math.floor(parsed)));
+  });
+  const [isBox, setIsBox] = useState(false);
+
+  const addItem = useCartStore((state) => state.addItem);
   const isAddDisabled = isOrderingDisabled || kg < 1;
 
   const handleKgChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +56,7 @@ export const ProductCard = ({
     if (value === "") return;
     const parsed = Number(value);
     if (Number.isNaN(parsed)) return;
-    const nextKg = Math.max(0, Math.min(10, Math.floor(parsed)));
+    const nextKg = Math.max(0, Math.min(kgLimit, Math.floor(parsed)));
     setKg(nextKg);
   };
 
@@ -51,13 +66,19 @@ export const ProductCard = ({
       return;
     }
 
-    const result = addItem({
-      productId: id,
-      name,
-      price,
-      image,
-      kg,
-    });
+    const result = addItem(
+      {
+        productId: id,
+        name,
+        price,
+        image,
+        kg,
+        maxKgPerOrder,
+        allowBoxes,
+        isBox,
+      },
+      { ignoreLimits: isSuperUser },
+    );
 
     if (!result.ok) {
       toast.error(result.error || "No se pudo agregar el producto");
@@ -77,6 +98,11 @@ export const ProductCard = ({
               alt={name}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
+            {!isActive && (
+              <span className="absolute left-2 top-2 rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+                Oculto
+              </span>
+            )}
             <div className="image-overlay" />
           </div>
 
@@ -89,8 +115,34 @@ export const ProductCard = ({
           <div className="space-y-3">
             <div>
               <p className="font-semibold text-lg">${price}</p>
-              <p className="text-xs text-muted-foreground">Selecciona kg</p>
+              <p className="text-xs text-muted-foreground">
+                {isSuperUser ? "Sin limite de kg" : `Maximo ${kgLimit} kg por producto`}
+              </p>
             </div>
+
+            {allowBoxes && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  type="button"
+                  variant={isBox ? "outline" : "default"}
+                  className="h-8 text-xs"
+                  onClick={() => setIsBox(false)}
+                >
+                  Kg
+                </Button>
+                <Button
+                  size="sm"
+                  type="button"
+                  variant={isBox ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => setIsBox(true)}
+                >
+                  Caja
+                </Button>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex h-8 w-28 items-center overflow-hidden rounded-md border">
                 <button
@@ -105,7 +157,7 @@ export const ProductCard = ({
                 <Input
                   type="number"
                   min={0}
-                  max={10}
+                  max={kgLimit}
                   step={1}
                   value={kg}
                   onChange={handleKgChange}
@@ -115,8 +167,8 @@ export const ProductCard = ({
                 />
                 <button
                   type="button"
-                  onClick={() => setKg((prev) => Math.min(10, prev + 1))}
-                  disabled={isOrderingDisabled || kg >= 10}
+                  onClick={() => setKg((prev) => Math.min(kgLimit, prev + 1))}
+                  disabled={isOrderingDisabled || kg >= kgLimit}
                   className="flex h-8 w-8 min-w-8 shrink-0 items-center justify-center border-l bg-background p-0 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label={`Aumentar kg para ${name}`}
                 >

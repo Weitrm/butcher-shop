@@ -8,6 +8,8 @@ export interface Product {
     slug:        string;
     stock:       number;
     isActive:    boolean;
+    maxKgPerOrder: number;
+    allowBoxes:  boolean;
     gender:      string;
     images:      string[];
     user:        User;

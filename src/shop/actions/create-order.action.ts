@@ -5,6 +5,7 @@ import { mapOrderImages } from "./order.mapper";
 interface CreateOrderItem {
   productId: string;
   kg: number;
+  isBox?: boolean;
 }
 
 export const createOrderAction = async (

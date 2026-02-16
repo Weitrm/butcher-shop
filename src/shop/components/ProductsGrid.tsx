@@ -75,6 +75,9 @@ export const ProductsGrid = ({products}: Props) => {
                     name={product.title}
                     price={product.price}
                     image={product.images[0]}
+                    isActive={product.isActive}
+                    maxKgPerOrder={product.maxKgPerOrder}
+                    allowBoxes={product.allowBoxes}
                     initialKg={0}
                   />
                 ))}

@@ -37,7 +37,7 @@ export const LatestOrderPreview = ({ order, isLoading }: LatestOrderPreviewProps
   const items = order.items
     .map((item) => {
       const title = item.product?.title || "Producto";
-      return `${title} (${item.kg}kg)`;
+      return `${title} (${item.kg}kg${item.isBox ? ", caja" : ""})`;
     })
     .filter(Boolean);
   const previewItems = items.slice(0, 3);

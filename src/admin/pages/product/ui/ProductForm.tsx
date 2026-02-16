@@ -46,6 +46,7 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
 
     const currentStock = watch('stock');
     const isActive = watch('isActive') ?? true;
+    const allowBoxes = watch('allowBoxes') ?? false;
 
 
   const handleDrag = (e: React.DragEvent) => {
@@ -148,6 +149,23 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
                         />
                         {errors.stock && <p className="text-red-500 text-sm mt-1">El stock es requerido</p>}
                     </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Máximo kg por pedido
+                      </label>
+                      <input
+                        type="number"
+                        {...register('maxKgPerOrder', { required: true, min: 1 })}
+                        className={cn("w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", { "border-red-500": errors.maxKgPerOrder })}
+                        placeholder="Ej: 10"
+                      />
+                      {errors.maxKgPerOrder && (
+                        <p className="text-red-500 text-sm mt-1">
+                          El máximo por pedido es requerido y debe ser mayor a 0
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -315,6 +333,17 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
                         />
                     </label>
 
+                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <span className="text-sm font-medium text-slate-700">
+                            Permitir pedidos por caja
+                        </span>
+                        <input
+                            type="checkbox"
+                            {...register('allowBoxes')}
+                            className="h-4 w-4"
+                        />
+                    </label>
+
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                     <span className="text-sm font-medium text-slate-700">
                         Inventario
@@ -342,6 +371,18 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
                     </span>
                     <span className="text-sm text-slate-600">
                         {images.length} imágenes
+                    </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <span className="text-sm font-medium text-slate-700">
+                        Modo caja
+                    </span>
+                    <span className={cn(
+                        "px-2 py-1 text-xs font-medium rounded-full",
+                        allowBoxes ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-700"
+                    )}>
+                        {allowBoxes ? 'Permitido' : 'No permitido'}
                     </span>
                     </div>
                 </div>

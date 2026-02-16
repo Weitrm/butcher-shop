@@ -1,16 +1,16 @@
-﻿import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { AdminTitle } from "@/admin/components/AdminTitle";
+import { updateOrderStatusAction } from "@/admin/actions/update-order-status.action";
+import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currencyFormatter } from "@/lib/currency-formatter";
-import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
-import { updateOrderStatusAction } from "@/admin/actions/update-order-status.action";
 import type { OrderStatus } from "@/interface/order.interface";
+import { currencyFormatter } from "@/lib/currency-formatter";
 
 const statusOptions: Array<{ value: OrderStatus; label: string }> = [
   { value: "pending", label: "Pendiente" },
@@ -41,6 +41,7 @@ export const AdminOrdersPage = () => {
   const orders = data?.orders || [];
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
   const summary = orders.reduce(
     (acc, order) => {
       acc.total += 1;
@@ -52,14 +53,14 @@ export const AdminOrdersPage = () => {
     { total: 0, pending: 0, completed: 0, cancelled: 0 },
   );
 
-  const mutation = useMutation({
+  const statusMutation = useMutation({
     mutationFn: updateOrderStatusAction,
   });
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     setUpdatingOrderId(orderId);
     try {
-      await mutation.mutateAsync({ orderId, status });
+      await statusMutation.mutateAsync({ orderId, status });
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -149,7 +150,7 @@ export const AdminOrdersPage = () => {
                 <TableCell>
                   <div className="max-w-[260px] truncate text-sm text-gray-600">
                     {order.items
-                      .map((item) => `${item.product.title} (${item.kg}kg)`)
+                      .map((item) => `${item.product.title} (${item.kg}kg${item.isBox ? ", caja" : ""})`)
                       .join(", ")}
                   </div>
                 </TableCell>

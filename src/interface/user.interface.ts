@@ -4,6 +4,7 @@ export interface User {
     employeeNumber: string;
     nationalId: string;
     isActive: boolean;
+    isSuperUser: boolean;
     roles: string[];
 }
 

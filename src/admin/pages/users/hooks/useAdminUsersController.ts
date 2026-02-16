@@ -6,6 +6,7 @@ import { useSearchParams } from "react-router";
 import { useAdminUsers } from "@/admin/hooks/useAdminUsers";
 import { updateUserStatusAction } from "@/admin/actions/update-user-status.action";
 import { updateUserPasswordAction } from "@/admin/actions/update-user-password.action";
+import { updateUserSuperUserAction } from "@/admin/actions/update-user-super-user.action";
 import { deleteUserAction } from "@/admin/actions/delete-user.action";
 import { registerAction } from "@/auth/actions/register.action";
 import { useAuthStore } from "@/auth/store/auth.store";
@@ -23,6 +24,7 @@ export const useAdminUsersController = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const [updatingStatusUserId, setUpdatingStatusUserId] = useState<string | null>(null);
+  const [updatingSuperUserId, setUpdatingSuperUserId] = useState<string | null>(null);
   const [updatingPasswordUserId, setUpdatingPasswordUserId] = useState<string | null>(
     null,
   );
@@ -50,6 +52,7 @@ export const useAdminUsersController = () => {
         user.employeeNumber,
         user.nationalId,
         (user.roles || []).join(" "),
+        user.isSuperUser ? "super usuario" : "normal",
       ]
         .filter(Boolean)
         .join(" ")
@@ -169,6 +172,28 @@ export const useAdminUsersController = () => {
     }
   };
 
+  const handleToggleSuperUser = async (userId: string, nextValue: boolean) => {
+    if (updatingSuperUserId) return;
+    setUpdatingSuperUserId(userId);
+
+    try {
+      await updateUserSuperUserAction(userId, nextValue);
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success(
+        nextValue
+          ? "Permiso de super usuario activado"
+          : "Permiso de super usuario desactivado",
+      );
+      setOpenMenuUserId(null);
+    } catch (error) {
+      toastAxiosError(error, "No se pudo actualizar el permiso de super usuario");
+    } finally {
+      setUpdatingSuperUserId(null);
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (deletingUserId) return;
     if (currentUserId && userId === currentUserId) {
@@ -204,6 +229,7 @@ export const useAdminUsersController = () => {
     isFormVisible,
     openMenuUserId,
     updatingStatusUserId,
+    updatingSuperUserId,
     updatingPasswordUserId,
     deletingUserId,
     passwordDrafts,
@@ -212,6 +238,7 @@ export const useAdminUsersController = () => {
     setPasswordDrafts,
     handleSubmit,
     handleToggleStatus,
+    handleToggleSuperUser,
     handleUpdatePassword,
     handleDeleteUser,
   };

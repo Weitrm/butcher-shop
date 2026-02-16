@@ -83,6 +83,7 @@ export const HistoryPage = () => {
                               <p className="font-medium">{item.product.title}</p>
                               <p className="text-muted-foreground">
                                 {item.kg} kg x ${item.unitPrice}
+                                {item.isBox ? " (caja)" : ""}
                               </p>
                             </div>
                           </div>

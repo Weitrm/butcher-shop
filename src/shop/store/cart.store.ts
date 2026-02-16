@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export type CartItem = {
   productId: string;
@@ -7,12 +7,29 @@ export type CartItem = {
   price: number;
   image: string;
   kg: number;
+  maxKgPerOrder: number;
+  allowBoxes: boolean;
+  isBox: boolean;
+};
+
+type CartValidationOptions = {
+  ignoreLimits?: boolean;
 };
 
 type CartState = {
   items: CartItem[];
-  addItem: (item: CartItem) => { ok: boolean; error?: string };
-  updateItemKg: (productId: string, kg: number) => { ok: boolean; error?: string };
+  maxTotalKg: number;
+  setMaxTotalKg: (maxTotalKg: number) => void;
+  addItem: (
+    item: CartItem,
+    options?: CartValidationOptions,
+  ) => { ok: boolean; error?: string };
+  updateItemKg: (
+    productId: string,
+    kg: number,
+    options?: CartValidationOptions,
+  ) => { ok: boolean; error?: string };
+  updateItemIsBox: (productId: string, isBox: boolean) => { ok: boolean; error?: string };
   removeItem: (productId: string) => void;
   clear: () => void;
   getTotalKg: () => number;
@@ -20,20 +37,53 @@ type CartState = {
   getTotalItems: () => number;
 };
 
-const MAX_TOTAL_KG = 10;
+const DEFAULT_MAX_TOTAL_KG = 10;
 const MAX_ITEMS = 2;
 
 const isInvalidKg = (kg: number) =>
   !Number.isFinite(kg) || !Number.isInteger(kg) || kg < 1;
 
-const validateItems = (items: CartItem[]) => {
-  if (items.length > MAX_ITEMS) {
-    return 'Solo se permiten 2 productos por pedido';
+const safeMaxKg = (value: number | undefined) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_TOTAL_KG;
+  return Math.floor(parsed);
+};
+
+const normalizeCartItem = (item: Partial<CartItem>): CartItem => ({
+  productId: item.productId || "",
+  name: item.name || "",
+  price: Number(item.price || 0),
+  image: item.image || "",
+  kg: Math.max(1, Math.floor(Number(item.kg || 1))),
+  maxKgPerOrder: safeMaxKg(item.maxKgPerOrder),
+  allowBoxes: Boolean(item.allowBoxes),
+  isBox: Boolean(item.isBox) && Boolean(item.allowBoxes),
+});
+
+const validateItems = (
+  items: CartItem[],
+  maxTotalKg: number,
+  options?: CartValidationOptions,
+) => {
+  if (items.some((item) => item.isBox && !item.allowBoxes)) {
+    return "Uno o más productos no permiten pedidos por caja";
   }
 
-  const totalKg = items.reduce((total, item) => total + item.kg, 0);
-  if (totalKg > MAX_TOTAL_KG) {
-    return 'El total no puede superar los 10 kg';
+  if (!options?.ignoreLimits) {
+    if (items.length > MAX_ITEMS) {
+      return "Solo se permiten 2 productos por pedido";
+    }
+
+    for (const item of items) {
+      if (item.kg > safeMaxKg(item.maxKgPerOrder)) {
+        return `El producto ${item.name} no permite más de ${safeMaxKg(item.maxKgPerOrder)} kg`;
+      }
+    }
+
+    const totalKg = items.reduce((total, item) => total + item.kg, 0);
+    if (totalKg > maxTotalKg) {
+      return `El total no puede superar los ${maxTotalKg} kg`;
+    }
   }
 
   return null;
@@ -43,60 +93,118 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (item) => {
-        if (isInvalidKg(item.kg)) {
-          return { ok: false, error: 'Ingresa un valor de kg valido' };
+      maxTotalKg: DEFAULT_MAX_TOTAL_KG,
+      setMaxTotalKg: (maxTotalKg) =>
+        set({
+          maxTotalKg:
+            Number.isFinite(maxTotalKg) && maxTotalKg > 0
+              ? Math.floor(maxTotalKg)
+              : DEFAULT_MAX_TOTAL_KG,
+        }),
+      addItem: (item, options) => {
+        const normalizedItem = normalizeCartItem(item);
+        if (isInvalidKg(normalizedItem.kg)) {
+          return { ok: false, error: "Ingresa un valor de kg valido" };
         }
 
-        const items = get().items;
-        const existing = items.find((cartItem) => cartItem.productId === item.productId);
+        const items = get().items.map(normalizeCartItem);
+        const existing = items.find(
+          (cartItem) => cartItem.productId === normalizedItem.productId,
+        );
         const nextItems = existing
           ? items.map((cartItem) =>
-              cartItem.productId === item.productId
-                ? { ...cartItem, ...item, kg: item.kg }
+              cartItem.productId === normalizedItem.productId
+                ? { ...cartItem, ...normalizedItem, kg: normalizedItem.kg }
                 : cartItem,
             )
-          : [...items, item];
+          : [...items, normalizedItem];
 
-        const error = validateItems(nextItems);
+        const error = validateItems(nextItems, get().maxTotalKg, options);
         if (error) return { ok: false, error };
 
         set({ items: nextItems });
         return { ok: true };
       },
-      updateItemKg: (productId, kg) => {
+      updateItemKg: (productId, kg, options) => {
         if (isInvalidKg(kg)) {
-          return { ok: false, error: 'Ingresa un valor de kg valido' };
+          return { ok: false, error: "Ingresa un valor de kg valido" };
         }
 
-        const items = get().items;
+        const items = get().items.map(normalizeCartItem);
         const exists = items.some((item) => item.productId === productId);
         if (!exists) {
-          return { ok: false, error: 'Producto no encontrado en el pedido' };
+          return { ok: false, error: "Producto no encontrado en el pedido" };
         }
 
         const nextItems = items.map((item) =>
           item.productId === productId ? { ...item, kg } : item,
         );
 
-        const error = validateItems(nextItems);
+        const error = validateItems(nextItems, get().maxTotalKg, options);
         if (error) return { ok: false, error };
 
         set({ items: nextItems });
         return { ok: true };
       },
+      updateItemIsBox: (productId, isBox) => {
+        const items = get().items.map(normalizeCartItem);
+        const item = items.find((current) => current.productId === productId);
+        if (!item) {
+          return { ok: false, error: "Producto no encontrado en el pedido" };
+        }
+        if (isBox && !item.allowBoxes) {
+          return {
+            ok: false,
+            error: "Este producto no permite pedidos por caja",
+          };
+        }
+
+        const nextItems = items.map((current) =>
+          current.productId === productId
+            ? { ...current, isBox: isBox && current.allowBoxes }
+            : current,
+        );
+
+        set({ items: nextItems });
+        return { ok: true };
+      },
       removeItem: (productId) =>
-        set({ items: get().items.filter((item) => item.productId !== productId) }),
+        set({
+          items: get()
+            .items.map(normalizeCartItem)
+            .filter((item) => item.productId !== productId),
+        }),
       clear: () => set({ items: [] }),
-      getTotalKg: () => get().items.reduce((total, item) => total + item.kg, 0),
+      getTotalKg: () =>
+        get()
+          .items.map(normalizeCartItem)
+          .reduce((total, item) => total + item.kg, 0),
       getTotalPrice: () =>
-        get().items.reduce((total, item) => total + item.kg * item.price, 0),
+        get()
+          .items.map(normalizeCartItem)
+          .reduce((total, item) => total + item.kg * item.price, 0),
       getTotalItems: () => get().items.length,
     }),
     {
-      name: 'butcher-cart',
+      name: "butcher-cart",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, maxTotalKg: state.maxTotalKg }),
+      merge: (persistedState, currentState) => {
+        const typedPersisted = persistedState as
+          | { items?: Partial<CartItem>[]; maxTotalKg?: number }
+          | undefined;
+
+        return {
+          ...currentState,
+          ...typedPersisted,
+          items: (typedPersisted?.items || []).map(normalizeCartItem),
+          maxTotalKg:
+            Number.isFinite(typedPersisted?.maxTotalKg) &&
+            Number(typedPersisted?.maxTotalKg) > 0
+              ? Math.floor(Number(typedPersisted?.maxTotalKg))
+              : DEFAULT_MAX_TOTAL_KG,
+        };
+      },
     },
   ),
 );

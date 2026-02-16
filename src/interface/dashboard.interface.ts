@@ -23,6 +23,7 @@ export interface DashboardActivityPoint {
 export interface DashboardRecentOrderItem {
   id: string;
   kg: number;
+  isBox: boolean;
   product: {
     id: string;
     title: string;

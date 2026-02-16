@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { KeyRound, Trash2, UserCheck, UserX } from "lucide-react";
+import { KeyRound, ShieldCheck, Trash2, UserCheck, UserX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,12 @@ type UserActionsModalProps = {
   user: User;
   password: string;
   isUpdatingStatus: boolean;
+  isUpdatingSuperUser: boolean;
   isUpdatingPassword: boolean;
   isDeleting: boolean;
   onPasswordChange: (value: string) => void;
   onToggleStatus: () => void;
+  onToggleSuperUser: () => void;
   onUpdatePassword: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -24,10 +26,12 @@ export const UserActionsModal = ({
   user,
   password,
   isUpdatingStatus,
+  isUpdatingSuperUser,
   isUpdatingPassword,
   isDeleting,
   onPasswordChange,
   onToggleStatus,
+  onToggleSuperUser,
   onUpdatePassword,
   onDelete,
   onClose,
@@ -88,6 +92,21 @@ export const UserActionsModal = ({
               : user.isActive
                 ? "Desactivar usuario"
                 : "Activar usuario"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            disabled={isUpdatingSuperUser}
+            onClick={onToggleSuperUser}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            {isUpdatingSuperUser
+              ? "Actualizando..."
+              : user.isSuperUser
+                ? "Quitar super usuario"
+                : "Hacer super usuario"}
           </Button>
 
           <div className="space-y-2">

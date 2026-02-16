@@ -1,8 +1,8 @@
-﻿import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Trash } from "lucide-react";
+import { AlertTriangle, Package, Trash } from "lucide-react";
 
 import { CustomJumbotron } from "@/shop/components/CustomJumbotron";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { createOrderAction } from "@/shop/actions/create-order.action";
 import { useOrders } from "@/shop/hooks/useOrders";
+import { useOrderSettings } from "@/shop/hooks/useOrderSettings";
 import { useCartStore } from "@/shop/store/cart.store";
 import { useAuthStore } from "@/auth/store/auth.store";
 
@@ -20,44 +21,79 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
+const SUPER_MAX_KG = 9999;
+
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("es-AR", {
     dateStyle: "medium",
     timeStyle: "short",
   });
 
+const getStartOfWeekSunday = (reference = new Date()) => {
+  const start = new Date(reference);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+};
+
 export const OrderPage = () => {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const items = useCartStore((state) => state.items);
+  const maxTotalKg = useCartStore((state) => state.maxTotalKg);
+  const setMaxTotalKg = useCartStore((state) => state.setMaxTotalKg);
   const totalKg = useCartStore((state) => state.getTotalKg());
   const totalPrice = useCartStore((state) => state.getTotalPrice());
   const updateItemKg = useCartStore((state) => state.updateItemKg);
+  const updateItemIsBox = useCartStore((state) => state.updateItemIsBox);
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
+
   const user = useAuthStore((state) => state.user);
   const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
+  const isSuperUser = Boolean(user?.isSuperUser);
 
+  const { data: settings } = useOrderSettings();
   const { data, isLoading: isOrdersLoading } = useOrders({
     limit: 1,
     useSearchParams: false,
   });
   const latestOrder = data?.orders[0];
 
+  useEffect(() => {
+    if (!settings?.maxTotalKg) return;
+    setMaxTotalKg(settings.maxTotalKg);
+  }, [settings?.maxTotalKg, setMaxTotalKg]);
+
+  const hasOrderThisWeek = useMemo(() => {
+    if (isSuperUser || !latestOrder?.createdAt) return false;
+    const startOfWeek = getStartOfWeekSunday();
+    return new Date(latestOrder.createdAt).getTime() >= startOfWeek.getTime();
+  }, [isSuperUser, latestOrder?.createdAt]);
+
   const handleConfirm = async () => {
     if (isOrderingDisabled) return;
     if (!items.length) return;
+    if (!isSuperUser && hasOrderThisWeek) {
+      toast.error("Ya realizaste un pedido esta semana. Se reinicia los domingos.");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await createOrderAction(
-        items.map((item) => ({ productId: item.productId, kg: item.kg })),
+        items.map((item) => ({
+          productId: item.productId,
+          kg: item.kg,
+          isBox: item.isBox,
+        })),
       );
       clear();
       await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       toast.success("Pedido confirmado");
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -94,6 +130,19 @@ export const OrderPage = () => {
               </CardContent>
             </Card>
           )}
+
+          {!isSuperUser && hasOrderThisWeek && (
+            <Card className="border-blue-200 bg-blue-50 text-blue-900">
+              <CardContent className="flex items-start gap-2 p-4 text-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4" />
+                <div>
+                  Ya realizaste un pedido esta semana. Podrás volver a pedir desde el
+                  domingo.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {items.length > 0 ? (
             <>
               <Card>
@@ -102,7 +151,9 @@ export const OrderPage = () => {
                     <div>
                       <h2 className="text-lg font-semibold">Tu pedido</h2>
                       <p className="text-sm text-muted-foreground">
-                        Máximo 10 kg y 2 productos distintos.
+                        {isSuperUser
+                          ? "Modo super usuario: sin limites de kg ni frecuencia."
+                          : `Máximo ${maxTotalKg} kg y 2 productos distintos.`}
                       </p>
                     </div>
                     <Button
@@ -116,66 +167,95 @@ export const OrderPage = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {items.map((item) => (
-                      <div
-                        key={item.productId}
-                        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="h-16 w-16 rounded-md object-cover"
+                    {items.map((item) => {
+                      const itemLimit = isSuperUser
+                        ? SUPER_MAX_KG
+                        : Math.max(1, item.maxKgPerOrder || 1);
+
+                      return (
+                        <div
+                          key={item.productId}
+                          className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-16 w-16 rounded-md object-cover"
+                              />
+                            ) : (
+                              <div className="h-16 w-16 rounded-md bg-muted/40" />
+                            )}
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                ${item.price} / kg
+                              </p>
+                              {!isSuperUser && (
+                                <p className="text-xs text-muted-foreground">
+                                  Máximo {itemLimit} kg
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {item.allowBoxes && (
+                              <Button
+                                type="button"
+                                variant={item.isBox ? "default" : "outline"}
+                                size="sm"
+                                disabled={isOrderingDisabled}
+                                onClick={() => {
+                                  const result = updateItemIsBox(item.productId, !item.isBox);
+                                  if (!result.ok) {
+                                    toast.error(result.error || "No se pudo cambiar el tipo");
+                                  }
+                                }}
+                              >
+                                <Package className="h-4 w-4" />
+                                {item.isBox ? "Caja" : "Kg"}
+                              </Button>
+                            )}
+                            <Input
+                              type="number"
+                              min={1}
+                              max={itemLimit}
+                              step={1}
+                              value={item.kg}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                if (value === "") return;
+                                const parsed = Number(value);
+                                if (Number.isNaN(parsed)) return;
+                                const result = updateItemKg(
+                                  item.productId,
+                                  Math.max(1, Math.min(itemLimit, Math.floor(parsed))),
+                                  { ignoreLimits: isSuperUser },
+                                );
+                                if (!result.ok) {
+                                  toast.error(
+                                    result.error || "No se pudo actualizar el kg",
+                                  );
+                                }
+                              }}
+                              className="h-9 w-24"
+                              aria-label={`Kg para ${item.name}`}
+                              disabled={isOrderingDisabled}
                             />
-                          ) : (
-                            <div className="h-16 w-16 rounded-md bg-muted/40" />
-                          )}
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ${item.price} / kg
-                            </p>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => removeItem(item.productId)}
+                              disabled={isSubmitting || isOrderingDisabled}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                          <Input
-                            type="number"
-                            min={1}
-                            max={10}
-                            step={1}
-                            value={item.kg}
-                            onChange={(event) => {
-                              const value = event.target.value;
-                              if (value === "") return;
-                              const parsed = Number(value);
-                              if (Number.isNaN(parsed)) return;
-                              const result = updateItemKg(
-                                item.productId,
-                                Math.max(1, Math.min(10, Math.floor(parsed))),
-                              );
-                              if (!result.ok) {
-                                toast.error(
-                                  result.error || "No se pudo actualizar el kg",
-                                );
-                              }
-                            }}
-                            className="h-9 w-24"
-                            aria-label={`Kg para ${item.name}`}
-                            disabled={isOrderingDisabled}
-                          />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => removeItem(item.productId)}
-                            disabled={isSubmitting || isOrderingDisabled}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <Separator />
@@ -191,16 +271,21 @@ export const OrderPage = () => {
                     </div>
                   </div>
 
-                  <Button onClick={handleConfirm} disabled={isSubmitting || isOrderingDisabled}>
+                  <Button
+                    onClick={handleConfirm}
+                    disabled={
+                      isSubmitting ||
+                      isOrderingDisabled ||
+                      (!isSuperUser && hasOrderThisWeek)
+                    }
+                  >
                     Confirmar pedido
                   </Button>
                 </CardContent>
               </Card>
 
               {isOrdersLoading ? (
-                <p className="text-sm text-muted-foreground">
-                  Cargando pedidos...
-                </p>
+                <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
               ) : latestOrder ? (
                 <Card>
                   <CardContent className="p-6 space-y-4">
@@ -241,6 +326,7 @@ export const OrderPage = () => {
                               <p className="font-medium">{item.product.title}</p>
                               <p className="text-muted-foreground">
                                 {item.kg} kg x ${item.unitPrice}
+                                {item.isBox ? " (caja)" : ""}
                               </p>
                             </div>
                           </div>
@@ -262,9 +348,7 @@ export const OrderPage = () => {
               ) : null}
             </>
           ) : isOrdersLoading ? (
-            <p className="text-sm text-muted-foreground">
-              Cargando pedidos...
-            </p>
+            <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
           ) : latestOrder ? (
             <Card>
               <CardContent className="p-6 space-y-4">
@@ -305,6 +389,7 @@ export const OrderPage = () => {
                           <p className="font-medium">{item.product.title}</p>
                           <p className="text-muted-foreground">
                             {item.kg} kg x ${item.unitPrice}
+                            {item.isBox ? " (caja)" : ""}
                           </p>
                         </div>
                       </div>

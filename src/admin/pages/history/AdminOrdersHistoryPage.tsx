@@ -158,7 +158,7 @@ export const AdminOrdersHistoryPage = () => {
                     <TableCell>
                       <div className="max-w-[260px] truncate text-sm text-gray-600">
                         {order.items
-                          .map((item) => `${item.product.title} (${item.kg}kg)`)
+                          .map((item) => `${item.product.title} (${item.kg}kg${item.isBox ? ", caja" : ""})`)
                           .join(", ")}
                       </div>
                     </TableCell>

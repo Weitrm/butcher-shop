@@ -246,7 +246,9 @@ export const DashboardPage = () => {
                     <div className="mt-3 text-xs text-gray-500">
                       {order.items
                         .map((item) =>
-                          item.product ? `${item.product.title} (${item.kg}kg)` : "",
+                          item.product
+                            ? `${item.product.title} (${item.kg}kg${item.isBox ? ", caja" : ""})`
+                            : "",
                         )
                         .filter(Boolean)
                         .join(", ")}

@@ -1,46 +1,49 @@
-﻿import { useMemo, useState } from "react"
-import { Link, useParams } from "react-router"
-import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading"
+import { useMemo, useState } from "react";
+import { Link, useParams } from "react-router";
+import { toast } from "sonner";
+import { Minus, Plus, ShoppingBag } from "lucide-react";
 
-import { ProductCard } from "@/shop/components/ProductCart"
+import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
+import { ProductCard } from "@/shop/components/ProductCart";
+import { useProduct } from "@/shop/hooks/useProduct";
+import { useProducts } from "@/shop/hooks/useProducts";
+import { useCartStore } from "@/shop/store/cart.store";
+import { useAuthStore } from "@/auth/store/auth.store";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
-import { useProduct } from "@/shop/hooks/useProduct"
-import { useProducts } from "@/shop/hooks/useProducts"
-import { useCartStore } from "@/shop/store/cart.store"
-import { useAuthStore } from "@/auth/store/auth.store"
-
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Minus, Plus, ShoppingBag } from "lucide-react"
-import { toast } from "sonner"
-
-
+const SUPER_MAX_KG = 9999;
 
 export const ProductPage = () => {
-  const { idSlug } = useParams()
-  const { data: product, isLoading } = useProduct(idSlug || "")
-  const { data: relatedData } = useProducts()
+  const { idSlug } = useParams();
+  const { data: product, isLoading } = useProduct(idSlug || "");
+  const { data: relatedData } = useProducts();
 
   const relatedProducts = useMemo(() => {
-    if (!product || !relatedData?.products?.length) return []
-    return relatedData.products.filter((item) => item.id !== product.id)
-  }, [product, relatedData])
+    if (!product || !relatedData?.products?.length) return [];
+    return relatedData.products.filter((item) => item.id !== product.id);
+  }, [product, relatedData]);
 
   const galleryImages = useMemo(() => {
-    if (!product?.images?.length) return []
-    return Array.from(new Set(product.images)).slice(0, 3)
-  }, [product])
+    if (!product?.images?.length) return [];
+    return Array.from(new Set(product.images)).slice(0, 3);
+  }, [product]);
 
-  const [quantity, setQuantity] = useState(1)
-  const addItem = useCartStore((state) => state.addItem)
-  const user = useAuthStore((state) => state.user)
-  const authStatus = useAuthStore((state) => state.authStatus)
+  const user = useAuthStore((state) => state.user);
+  const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
-    authStatus === "authenticated" && !!user && user.isActive === false
+    authStatus === "authenticated" && !!user && user.isActive === false;
+  const isSuperUser = Boolean(user?.isSuperUser);
+  const quantityLimit = isSuperUser
+    ? SUPER_MAX_KG
+    : Math.max(1, product?.maxKgPerOrder || 1);
 
+  const [quantity, setQuantity] = useState(1);
+  const [isBox, setIsBox] = useState(false);
+  const addItem = useCartStore((state) => state.addItem);
 
   if (isLoading) {
-    return <CustomFullScreenLoading />
+    return <CustomFullScreenLoading />;
   }
 
   if (!product) {
@@ -56,11 +59,11 @@ export const ProductPage = () => {
           </Link>
         </div>
       </section>
-    )
+    );
   }
 
-  const mainImage = galleryImages[0]
-  const extraImages = galleryImages.slice(1)
+  const mainImage = galleryImages[0];
+  const extraImages = galleryImages.slice(1);
 
   return (
     <section className="py-10 px-4 lg:px-8">
@@ -113,13 +116,9 @@ export const ProductPage = () => {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <h1 className="text-3xl lg:text-4xl font-montserrat">
-                {product.title}
-              </h1>
+              <h1 className="text-3xl lg:text-4xl font-montserrat">{product.title}</h1>
               <p className="text-2xl font-semibold">${product.price}</p>
-              <p className="text-muted-foreground leading-relaxed">
-                {product.description}
-              </p>
+              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
             </div>
 
             <Separator />
@@ -127,6 +126,11 @@ export const ProductPage = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-sm font-medium mb-2">Cantidad (KG)</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {isSuperUser
+                    ? "Sin limite de kg para tu usuario"
+                    : `Máximo ${quantityLimit} kg para este producto`}
+                </p>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
@@ -136,19 +140,40 @@ export const ProductPage = () => {
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="w-10 text-center text-sm font-medium">
-                    {quantity}
-                  </span>
+                  <span className="w-10 text-center text-sm font-medium">{quantity}</span>
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setQuantity((prev) => Math.min(10, prev + 1))}
+                    onClick={() => setQuantity((prev) => Math.min(quantityLimit, prev + 1))}
                     disabled={isOrderingDisabled}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
+
+              {product.allowBoxes && (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={isBox ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => setIsBox(false)}
+                    disabled={isOrderingDisabled}
+                  >
+                    Kg
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isBox ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsBox(true)}
+                    disabled={isOrderingDisabled}
+                  >
+                    Caja
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -156,20 +181,26 @@ export const ProductPage = () => {
                 className="flex-1"
                 disabled={isOrderingDisabled}
                 onClick={() => {
-                  const result = addItem({
-                    productId: product.id,
-                    name: product.title,
-                    price: product.price,
-                    image: product.images[0] || "",
-                    kg: quantity,
-                  })
+                  const result = addItem(
+                    {
+                      productId: product.id,
+                      name: product.title,
+                      price: product.price,
+                      image: product.images[0] || "",
+                      kg: quantity,
+                      maxKgPerOrder: product.maxKgPerOrder,
+                      allowBoxes: product.allowBoxes,
+                      isBox,
+                    },
+                    { ignoreLimits: isSuperUser },
+                  );
 
                   if (!result.ok) {
-                    toast.error(result.error || "No se pudo agregar el producto")
-                    return
+                    toast.error(result.error || "No se pudo agregar el producto");
+                    return;
                   }
 
-                  toast.success("Producto agregado al pedido")
+                  toast.success("Producto agregado al pedido");
                 }}
               >
                 <ShoppingBag className="h-4 w-4 mr-2" />
@@ -196,11 +227,14 @@ export const ProductPage = () => {
                 name={item.title}
                 price={item.price}
                 image={item.images[0]}
+                isActive={item.isActive}
+                maxKgPerOrder={item.maxKgPerOrder}
+                allowBoxes={item.allowBoxes}
               />
             ))}
           </div>
         </div>
       </div>
     </section>
-  )
-}
+  );
+};

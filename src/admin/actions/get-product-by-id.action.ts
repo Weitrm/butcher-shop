@@ -16,6 +16,8 @@ export const getProductByIdAction = async(id: string): Promise<Product> => {
             slug: '',
             stock: 0,
             isActive: true,
+            maxKgPerOrder: 10,
+            allowBoxes: false,
             images: [],
         } as unknown as Product;
     }

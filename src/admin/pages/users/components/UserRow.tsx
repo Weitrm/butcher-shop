@@ -22,6 +22,15 @@ export const UserRow = ({ user, isMenuOpen, onOpenActions }: UserRowProps) => (
       {(user.roles || []).join(", ")}
     </TableCell>
     <TableCell>
+      {user.isSuperUser ? (
+        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+          Super usuario
+        </span>
+      ) : (
+        <span className="text-xs text-gray-500">Normal</span>
+      )}
+    </TableCell>
+    <TableCell>
       <UserStatusBadge isActive={user.isActive} />
     </TableCell>
     <TableCell className="align-top">

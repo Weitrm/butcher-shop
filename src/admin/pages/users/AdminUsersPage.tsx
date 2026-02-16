@@ -25,6 +25,7 @@ export const AdminUsersPage = () => {
     isFormVisible,
     openMenuUserId,
     updatingStatusUserId,
+    updatingSuperUserId,
     updatingPasswordUserId,
     deletingUserId,
     passwordDrafts,
@@ -33,6 +34,7 @@ export const AdminUsersPage = () => {
     setPasswordDrafts,
     handleSubmit,
     handleToggleStatus,
+    handleToggleSuperUser,
     handleUpdatePassword,
     handleDeleteUser,
   } = useAdminUsersController();
@@ -109,12 +111,16 @@ export const AdminUsersPage = () => {
           user={selectedUser}
           password={passwordDrafts[selectedUser.id] || ""}
           isUpdatingStatus={updatingStatusUserId === selectedUser.id}
+          isUpdatingSuperUser={updatingSuperUserId === selectedUser.id}
           isUpdatingPassword={updatingPasswordUserId === selectedUser.id}
           isDeleting={deletingUserId === selectedUser.id}
           onPasswordChange={(value) =>
             setPasswordDrafts((prev) => ({ ...prev, [selectedUser.id]: value }))
           }
           onToggleStatus={() => handleToggleStatus(selectedUser.id, !selectedUser.isActive)}
+          onToggleSuperUser={() =>
+            handleToggleSuperUser(selectedUser.id, !selectedUser.isSuperUser)
+          }
           onUpdatePassword={() => handleUpdatePassword(selectedUser.id)}
           onDelete={() => handleDeleteUser(selectedUser.id)}
           onClose={() => setOpenMenuUserId(null)}
