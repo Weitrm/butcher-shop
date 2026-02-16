@@ -1,5 +1,9 @@
 import { butcherApi } from "@/api/butcherApi";
 import type { Product } from "@/interface/product.interface";
+import {
+    normalizeProductImageForSave,
+    resolveProductImageUrl,
+} from "@/lib/product-image";
 import { sleep } from "@/lib/sleep";
 
 
@@ -24,10 +28,9 @@ export const createUpdateProductAction = async (
         images.push(...newImageNames);
     }
 
-    const imagesToSave = images.map(image => {
-        if(image.includes('http')) return image.split('/').pop() || '';
-        return image;
-    })
+    const imagesToSave = images
+        .map(normalizeProductImageForSave)
+        .filter(Boolean);
 
 
     const {data} = await butcherApi<Product>({
@@ -41,10 +44,7 @@ export const createUpdateProductAction = async (
 
     return {
         ...data,
-        images: data.images.map(image => {
-            if (images.includes('http')) return image;
-            return `${import.meta.env.VITE_API_URL}/files/product/${image}`;
-        })
+        images: data.images.map(resolveProductImageUrl)
     }
 };
 

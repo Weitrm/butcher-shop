@@ -1,5 +1,6 @@
 import { butcherApi } from "@/api/butcherApi"
 import type { ProductsResponse } from "@/interface/products.response";
+import { resolveProductImageUrl } from "@/lib/product-image";
 
 
 interface Options {
@@ -25,7 +26,7 @@ export const getProductsAction = async(options: Options): Promise<ProductsRespon
 
     const productsWithImageUrls = data.products.map(product => ({
         ...product,
-        images: product.images.map(image => `${import.meta.env.VITE_API_URL}/files/product/${image}`)
+        images: product.images.map(resolveProductImageUrl)
     }))
 
 

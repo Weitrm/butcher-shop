@@ -1,7 +1,8 @@
 import type { Order } from "@/interface/order.interface";
+import { resolveProductImageUrl } from "@/lib/product-image";
 
 const mapImages = (images: string[]) =>
-  images.map((image) => `${import.meta.env.VITE_API_URL}/files/product/${image}`);
+  images.map(resolveProductImageUrl);
 
 export const mapOrderImages = (order: Order): Order => ({
   ...order,

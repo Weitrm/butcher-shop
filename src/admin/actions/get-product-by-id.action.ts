@@ -1,5 +1,6 @@
 import { butcherApi } from "@/api/butcherApi";
 import type { Product } from "@/interface/product.interface"
+import { resolveProductImageUrl } from "@/lib/product-image";
 
 export const getProductByIdAction = async(id: string): Promise<Product> => {
   
@@ -21,10 +22,7 @@ export const getProductByIdAction = async(id: string): Promise<Product> => {
 
     const {data} = await butcherApi.get<Product>(`/products/admin/${id}`);
 
-    const images = data.images.map(image => { 
-        if (image.includes('http')) return image;
-        return `${import.meta.env.VITE_API_URL}/files/product/${image}`;  
-     })
+    const images = data.images.map(resolveProductImageUrl)
 
     return {
         ...data,

@@ -1,5 +1,9 @@
 import { butcherApi } from "@/api/butcherApi";
 import type { Product } from "@/interface/product.interface";
+import {
+    normalizeProductImageForSave,
+    resolveProductImageUrl,
+} from "@/lib/product-image";
 
 interface DeleteProductImageArgs {
     productId: string;
@@ -15,10 +19,7 @@ export const deleteProductImageAction = async (
 
     const imagesToDelete = images
         .filter(image => image !== imageUrl)
-        .map(image => {
-            if (image.includes('http')) return image.split('/').pop() || '';
-            return image;
-        })
+        .map(normalizeProductImageForSave)
         .filter(Boolean);
 
     const { data } = await butcherApi<Product>({
@@ -31,9 +32,6 @@ export const deleteProductImageAction = async (
 
     return {
         ...data,
-        images: data.images.map(image => {
-            if (image.includes('http')) return image;
-            return `${import.meta.env.VITE_API_URL}/files/product/${image}`;
-        })
+        images: data.images.map(resolveProductImageUrl)
     };
 };
