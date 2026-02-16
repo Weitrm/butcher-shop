@@ -150,7 +150,7 @@ export const AdminOrdersHistoryPage = () => {
                                   : null,
                               ]
                                 .filter(Boolean)
-                                .join(" Â· ") || "-"
+                                .join(" , ") || "-"
                             : "-"}
                         </span>
                       </div>

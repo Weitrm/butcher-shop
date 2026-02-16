@@ -1,9 +1,14 @@
 import axios from 'axios';
 
 
+const resolveTimeout = (rawValue: unknown, fallback: number): number => {
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
 const butcherApi = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  timeout: 8000,
+  timeout: resolveTimeout(import.meta.env.VITE_API_TIMEOUT_MS, 12000),
 });
 
 

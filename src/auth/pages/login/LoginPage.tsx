@@ -31,7 +31,7 @@ export const LoginPage = () => {
     }
     const { lastError } = useAuthStore.getState();
     const message = (() => {
-      if (lastError === 'timeout') return 'El servidor no responde (timeout). Intenta nuevamente en unos minutos.';
+      if (lastError === 'timeout') return 'El servidor tardó demasiado en responder. Espera unos segundos e intenta otra vez.';
       if (lastError === 'invalid') return 'Credenciales inválidas. Revisa tu número de funcionario y contraseña.';
       if (lastError === 'network') return 'No se pudo conectar con el servidor.';
       return 'Error al iniciar sesión. Revisa tus credenciales.';
