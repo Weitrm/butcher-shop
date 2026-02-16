@@ -65,7 +65,7 @@ export const ProductsGrid = ({products}: Props) => {
             <div className="flex-1">
               <div className={
                 viewMode === 'grid' 
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
+                  ? "grid grid-cols-2 lg:grid-cols-3 gap-6" 
                   : "space-y-4"
               }>
                 {products.map((product) => (
@@ -75,6 +75,7 @@ export const ProductsGrid = ({products}: Props) => {
                     name={product.title}
                     price={product.price}
                     image={product.images[0]}
+                    initialKg={0}
                   />
                 ))}
               </div> 
