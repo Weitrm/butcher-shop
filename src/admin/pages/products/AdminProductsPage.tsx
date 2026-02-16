@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useState } from "react";
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
@@ -29,8 +29,10 @@ export const AdminProductsPage = () => {
   const { data: settings } = useOrderSettings();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [maxKgDraft, setMaxKgDraft] = useState("10");
+  const [maxKgDraft, setMaxKgDraft] = useState("");
+  const [isMaxKgDirty, setIsMaxKgDirty] = useState(false);
   const status = searchParams.get("status") || "all";
+  const maxKgInputValue = isMaxKgDirty ? maxKgDraft : String(settings?.maxTotalKg ?? 10);
 
   const deleteMutation = useMutation({
     mutationFn: deleteProductAction,
@@ -49,11 +51,6 @@ export const AdminProductsPage = () => {
     mutationFn: updateOrderSettingsAction,
   });
 
-  useEffect(() => {
-    if (!settings?.maxTotalKg) return;
-    setMaxKgDraft(String(settings.maxTotalKg));
-  }, [settings?.maxTotalKg]);
-
   const handleDelete = async (productId: string) => {
     const confirmDelete = window.confirm("¿Seguro que quieres eliminar este producto?");
     if (!confirmDelete) return;
@@ -62,16 +59,19 @@ export const AdminProductsPage = () => {
   };
 
   const handleUpdateSettings = async () => {
-    const parsed = Number(maxKgDraft);
+    const parsed = Number(maxKgInputValue);
     if (!Number.isFinite(parsed) || parsed < 1) {
-      toast.error("Ingresa un límite válido mayor a 0");
+      toast.error("Ingresa un límite válido mayor que 0");
       return;
     }
 
     try {
-      await settingsMutation.mutateAsync(Math.floor(parsed));
+      const nextValue = Math.floor(parsed);
+      await settingsMutation.mutateAsync(nextValue);
       await queryClient.invalidateQueries({ queryKey: ["order-settings"] });
       await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setMaxKgDraft(String(nextValue));
+      setIsMaxKgDirty(false);
       toast.success("Límite global de kg actualizado");
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -115,23 +115,26 @@ export const AdminProductsPage = () => {
           </select>
           <Link to="/admin/products/new">
             <Button>
-              <PlusIcon /> Nuevo Producto
+              <PlusIcon /> Nuevo producto
             </Button>
           </Link>
         </div>
       </div>
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-        <p className="text-sm font-medium text-gray-700">Límite global por pedido</p>
+        <p className="text-sm font-medium text-gray-700">Límite global de kg por pedido</p>
         <p className="mt-1 text-xs text-gray-500">
-          Este límite aplica a usuarios normales. Super usuarios no tienen límite.
+          Este límite aplica a usuarios normales. Los superusuarios no tienen límite.
         </p>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Input
             type="number"
             min={1}
-            value={maxKgDraft}
-            onChange={(event) => setMaxKgDraft(event.target.value)}
+            value={maxKgInputValue}
+            onChange={(event) => {
+              setIsMaxKgDirty(true);
+              setMaxKgDraft(event.target.value);
+            }}
             className="w-full sm:w-40"
           />
           <Button
@@ -176,7 +179,7 @@ export const AdminProductsPage = () => {
                 </Link>
               </TableCell>
               <TableCell>{currencyFormatter(product.price)}</TableCell>
-              <TableCell>{product.stock} Stock</TableCell>
+              <TableCell>{product.stock} en stock</TableCell>
               <TableCell>{product.maxKgPerOrder} kg</TableCell>
               <TableCell>{product.allowBoxes ? "Sí" : "No"}</TableCell>
               <TableCell>

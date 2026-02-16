@@ -1,20 +1,43 @@
-import { Suspense, type PropsWithChildren } from "react"
-import { RouterProvider } from "react-router"
-import { appRouter } from "./app.router"
+import { Suspense, useEffect, useState, type ComponentType, type PropsWithChildren } from "react";
+import { RouterProvider } from "react-router";
+import { appRouter } from "./app.router";
 
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
-import { Toaster } from "sonner"
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { Toaster } from "sonner";
 
-import { CustomFullScreenLoading } from "./components/custom/CustomFullScreenLoading"
-import { useAuthStore } from "./auth/store/auth.store"
+import { CustomFullScreenLoading } from "./components/custom/CustomFullScreenLoading";
+import { useAuthStore } from "./auth/store/auth.store";
 
+const queryClient = new QueryClient();
 
-const queryClient = new QueryClient()
+type DevtoolsComponent = ComponentType<{ initialIsOpen?: boolean }>;
+
+const ReactQueryDevtoolsLazy = () => {
+  const [Devtools, setDevtools] = useState<DevtoolsComponent | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    let mounted = true;
+
+    import("@tanstack/react-query-devtools").then((module) => {
+      if (!mounted) return;
+      setDevtools(() => module.ReactQueryDevtools);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!import.meta.env.DEV || !Devtools) return null;
+
+  return <Devtools initialIsOpen={false} />;
+};
 
 const CheckAuthProvider = ({ children }: PropsWithChildren) => {
-  const { checkAuthStatus } = useAuthStore()
-  const hasToken = !!localStorage.getItem("token")
+  const { checkAuthStatus } = useAuthStore();
+  const hasToken = !!localStorage.getItem("token");
 
   const { isLoading } = useQuery({
     queryKey: ["auth"],
@@ -23,14 +46,14 @@ const CheckAuthProvider = ({ children }: PropsWithChildren) => {
     enabled: hasToken,
     refetchInterval: hasToken ? 1000 * 60 * 1.5 : false,
     refetchOnWindowFocus: hasToken,
-  })
+  });
 
   if (hasToken && isLoading) {
-    return <CustomFullScreenLoading />
+    return <CustomFullScreenLoading />;
   }
 
-  return children
-}
+  return children;
+};
 
 export const ButcherShopApp = () => {
   return (
@@ -38,15 +61,14 @@ export const ButcherShopApp = () => {
       <QueryClientProvider client={queryClient}>
         <Toaster />
 
-        {/* CUSTOM PROVIDER */}
         <CheckAuthProvider>
           <Suspense fallback={<CustomFullScreenLoading />}>
             <RouterProvider router={appRouter} />
           </Suspense>
         </CheckAuthProvider>
 
-        <ReactQueryDevtools initialIsOpen={false} />
+        <ReactQueryDevtoolsLazy />
       </QueryClientProvider>
     </div>
-  )
-}
+  );
+};

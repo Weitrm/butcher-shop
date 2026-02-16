@@ -6,14 +6,13 @@ import {
 } from "@/lib/product-image";
 import { sleep } from "@/lib/sleep";
 
-
 export const createUpdateProductAction = async (
     productLike: Partial<Product> & { files?: File[] }
 ): Promise<Product> => {
+    await sleep(300);
 
-    await sleep(1000);
-
-    const {id, user, images= [], files = [], ...rest} = productLike;
+    const {id, images= [], files = [], ...rest} = productLike;
+    delete (rest as { user?: unknown }).user;
 
     const isCreating = id === 'new';
 

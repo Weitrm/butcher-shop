@@ -39,14 +39,15 @@ export const useAdminOrderNotifications = () => {
     [data?.orders],
   );
 
-  const hasNewOrder = Boolean(latestOrder && lastSeenId && latestOrder.id !== lastSeenId);
+  const resolvedLastSeenId = lastSeenId ?? latestOrder?.id ?? null;
+  const hasNewOrder = Boolean(
+    latestOrder && resolvedLastSeenId && latestOrder.id !== resolvedLastSeenId,
+  );
 
   useEffect(() => {
-    if (!latestOrder) return;
-    if (lastSeenId) return;
+    if (lastSeenId || !latestOrder?.id) return;
     writeStoredLastSeen(latestOrder.id);
-    setLastSeenId(latestOrder.id);
-  }, [latestOrder, lastSeenId]);
+  }, [lastSeenId, latestOrder?.id]);
 
   const markAsRead = useCallback(() => {
     if (!latestOrder) return;
