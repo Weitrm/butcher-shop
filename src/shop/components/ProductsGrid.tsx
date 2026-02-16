@@ -1,7 +1,6 @@
 ﻿import { Button } from "@/components/ui/button"
 import { Filter, Grid, List } from "lucide-react"
 import { ProductCard } from "./ProductCart" 
-import { FilterSidebar } from "./FilterSidebar"
 import { useSearchParams } from "react-router"
 import { useState } from "react"
 import type { Product } from "@/interface/product.interface"
@@ -62,28 +61,6 @@ export const ProductsGrid = ({products}: Props) => {
           </div>
 
           <div className="flex gap-8">
-            {/* Filters Sidebar - Desktop */}
-            <div className="hidden lg:block">
-              <FilterSidebar />
-            </div>
-
-            {/* Mobile Filters */}
-            {showFilters && (
-              <div className="fixed inset-0 z-50 bg-background p-4 lg:hidden">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold">Filtros</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setShowFilters(false)}
-                  >
-                    Cerrar
-                  </Button>
-                </div>
-                <FilterSidebar />
-              </div>
-            )}
-
             {/* Products Grid */}
             <div className="flex-1">
               <div className={
