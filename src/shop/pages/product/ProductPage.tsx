@@ -33,7 +33,11 @@ export const ProductPage = () => {
   const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
-  const isSuperUser = Boolean(user?.isSuperUser);
+  const isSuperUser = Boolean(
+    user?.isSuperUser ||
+      user?.roles?.includes("super-user") ||
+      user?.roles?.includes("super"),
+  );
   const quantityLimit = isSuperUser
     ? SUPER_MAX_KG
     : Math.max(1, product?.maxKgPerOrder || 1);

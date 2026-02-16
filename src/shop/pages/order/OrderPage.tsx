@@ -54,7 +54,11 @@ export const OrderPage = () => {
   const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
-  const isSuperUser = Boolean(user?.isSuperUser);
+  const isSuperUser = Boolean(
+    user?.isSuperUser ||
+      user?.roles?.includes("super-user") ||
+      user?.roles?.includes("super"),
+  );
 
   const { data: settings } = useOrderSettings();
   const { data, isLoading: isOrdersLoading } = useOrders({

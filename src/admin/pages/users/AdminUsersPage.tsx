@@ -119,7 +119,14 @@ export const AdminUsersPage = () => {
           }
           onToggleStatus={() => handleToggleStatus(selectedUser.id, !selectedUser.isActive)}
           onToggleSuperUser={() =>
-            handleToggleSuperUser(selectedUser.id, !selectedUser.isSuperUser)
+            handleToggleSuperUser(
+              selectedUser.id,
+              !(
+                selectedUser.isSuperUser ||
+                (selectedUser.roles || []).includes("super-user") ||
+                (selectedUser.roles || []).includes("super")
+              ),
+            )
           }
           onUpdatePassword={() => handleUpdatePassword(selectedUser.id)}
           onDelete={() => handleDeleteUser(selectedUser.id)}

@@ -49,6 +49,11 @@ export const UserActionsModal = ({
     };
   }, [onClose]);
 
+  const hasSuperRole =
+    user.isSuperUser ||
+    (user.roles || []).includes("super-user") ||
+    (user.roles || []).includes("super");
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -104,7 +109,7 @@ export const UserActionsModal = ({
             <ShieldCheck className="h-4 w-4" />
             {isUpdatingSuperUser
               ? "Actualizando..."
-              : user.isSuperUser
+              : hasSuperRole
                 ? "Quitar super usuario"
                 : "Hacer super usuario"}
           </Button>

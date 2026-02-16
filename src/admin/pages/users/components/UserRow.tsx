@@ -13,41 +13,43 @@ type UserRowProps = {
 };
 
 // Fila individual de usuario con disparador de acciones.
-export const UserRow = ({ user, isMenuOpen, onOpenActions }: UserRowProps) => (
-  <TableRow>
-    <TableCell className="font-medium">{user.fullName}</TableCell>
-    <TableCell>{user.employeeNumber}</TableCell>
-    <TableCell>{user.nationalId}</TableCell>
-    <TableCell className="text-sm text-gray-600">
-      {(user.roles || []).join(", ")}
-    </TableCell>
-    <TableCell>
-      {user.isSuperUser ? (
-        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-          Super usuario
-        </span>
-      ) : (
-        <span className="text-xs text-gray-500">Normal</span>
-      )}
-    </TableCell>
-    <TableCell>
-      <UserStatusBadge isActive={user.isActive} />
-    </TableCell>
-    <TableCell className="align-top">
-      <div className="flex justify-center">
-        <Button
-          type="button"
-          size="icon"
-          variant="secondary"
-          className="h-9 w-9 bg-blue-500 text-white hover:bg-blue-600"
-          onClick={() => onOpenActions(user.id)}
-          aria-expanded={isMenuOpen}
-          aria-controls={`user-actions-${user.id}`}
-          aria-label={`Acciones para ${user.fullName}`}
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      </div>
-    </TableCell>
-  </TableRow>
-);
+export const UserRow = ({ user, isMenuOpen, onOpenActions }: UserRowProps) => {
+  const hasSuperRole =
+    user.isSuperUser ||
+    (user.roles || []).includes("super-user") ||
+    (user.roles || []).includes("super");
+  const normalizedRoles = new Set(user.roles || []);
+  if (hasSuperRole) {
+    normalizedRoles.add("super-user");
+  }
+
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{user.fullName}</TableCell>
+      <TableCell>{user.employeeNumber}</TableCell>
+      <TableCell>{user.nationalId}</TableCell>
+      <TableCell className="text-sm text-gray-600">
+        {Array.from(normalizedRoles).join(", ") || "user"}
+      </TableCell>
+      <TableCell>
+        <UserStatusBadge isActive={user.isActive} />
+      </TableCell>
+      <TableCell className="align-top">
+        <div className="flex justify-center">
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="h-9 w-9 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => onOpenActions(user.id)}
+            aria-expanded={isMenuOpen}
+            aria-controls={`user-actions-${user.id}`}
+            aria-label={`Acciones para ${user.fullName}`}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
