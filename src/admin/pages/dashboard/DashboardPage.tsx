@@ -133,97 +133,8 @@ export const DashboardPage = () => {
     <>
       <AdminTitle title="Dashboard" subtitle="Panel de control" />
 
-      <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-gray-500">Pedidos de hoy</p>
-            <p className="text-3xl font-semibold text-gray-900">{orderCounts.day}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-gray-500">Pedidos de la semana</p>
-            <p className="text-3xl font-semibold text-gray-900">{orderCounts.week}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-gray-500">Pedidos del mes</p>
-            <p className="text-3xl font-semibold text-gray-900">{orderCounts.month}</p>
-          </CardContent>
-        </Card>
-      </div>
 
-      <Card className="mb-8">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Tendencia de demanda
-              </h3>
-              <p className="text-sm text-gray-500">
-                {rangeHint} Kg vendidos y pedidos por período.
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
-              {rangeOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  size="sm"
-                  variant={range === option.value ? "default" : "ghost"}
-                  className={
-                    range === option.value
-                      ? "bg-gray-900 text-white hover:bg-gray-900"
-                      : "text-gray-600"
-                  }
-                  onClick={() => handleRangeChange(option.value)}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <ChartContainer config={chartConfig} className="h-[260px] w-full">
-            <ComposedChart data={activityData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="shortLabel" tickLine={false} axisLine={false} />
-              <YAxis
-                yAxisId="left"
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend verticalAlign="top" align="right" />
-              <Bar
-                yAxisId="left"
-                dataKey="totalKg"
-                name="Kg"
-                fill="var(--color-totalKg)"
-                radius={[6, 6, 0, 0]}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="totalOrders"
-                name="Pedidos"
-                stroke="var(--color-totalOrders)"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-            </ComposedChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="p-6 space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -353,6 +264,96 @@ export const DashboardPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid grid-cols-1 gap-4 mt-8 md:grid-cols-3">
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-gray-500">Pedidos de hoy</p>
+            <p className="text-3xl font-semibold text-gray-900">{orderCounts.day}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-gray-500">Pedidos de la semana</p>
+            <p className="text-3xl font-semibold text-gray-900">{orderCounts.week}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-gray-500">Pedidos del mes</p>
+            <p className="text-3xl font-semibold text-gray-900">{orderCounts.month}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mb-8">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Tendencia de demanda
+              </h3>
+              <p className="text-sm text-gray-500">
+                {rangeHint} Kg vendidos y pedidos.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+              {rangeOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  size="sm"
+                  variant={range === option.value ? "default" : "ghost"}
+                  className={
+                    range === option.value
+                      ? "bg-gray-900 text-white hover:bg-gray-900"
+                      : "text-gray-600"
+                  }
+                  onClick={() => handleRangeChange(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <ChartContainer config={chartConfig} className="h-[260px] w-full">
+            <ComposedChart data={activityData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="shortLabel" tickLine={false} axisLine={false} />
+              <YAxis
+                yAxisId="left"
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend verticalAlign="top" align="right" />
+              <Bar
+                yAxisId="left"
+                dataKey="totalKg"
+                name="Kg"
+                fill="var(--color-totalKg)"
+                radius={[6, 6, 0, 0]}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="totalOrders"
+                name="Pedidos"
+                stroke="var(--color-totalOrders)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+            </ComposedChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
     </>
   )
 }
