@@ -1,8 +1,7 @@
 ﻿import { Button } from "@/components/ui/button"
-import { Filter, Grid, List } from "lucide-react"
+import { Grid, List } from "lucide-react"
 import { ProductCard } from "./ProductCart" 
 import { useSearchParams } from "react-router"
-import { useState } from "react"
 import type { Product } from "@/interface/product.interface"
 
 interface Props {
@@ -11,7 +10,6 @@ interface Props {
 
 export const ProductsGrid = ({products}: Props) => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [showFilters, setShowFilters] = useState(false)
   const viewMode = searchParams.get('viewMode') || 'grid'
   const handleViewModeChange = (mode: 'grid' | 'list') => {
     searchParams.set('viewMode', mode);
@@ -20,7 +18,7 @@ export const ProductsGrid = ({products}: Props) => {
   }
   return (
     <>
-      <section className="py-12 px-4 lg:px-8">
+      <section className="py-5 px-4 lg:px-8">
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
@@ -29,16 +27,6 @@ export const ProductsGrid = ({products}: Props) => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="lg:hidden"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-              
               <div className="hidden md:flex border rounded-md">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
