@@ -1,4 +1,4 @@
-import { Menu, Search, ShoppingBag, X } from "lucide-react";
+import { ChevronRight, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useRef, useState } from "react";
 
@@ -87,16 +87,6 @@ export const CustomHeader = () => {
               </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              aria-expanded={isMobileMenuOpen}
-              aria-label="Abrir menú"
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
 
             {isOrderingDisabled ? (
               <Button variant="ghost" size="icon" className="relative" disabled>
@@ -114,6 +104,17 @@ export const CustomHeader = () => {
                 </Link>
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden h-10 w-10 rounded-full border-slate-300 bg-white shadow-sm transition-transform active:scale-95"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-expanded={isMobileMenuOpen}
+              aria-label={isMobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
 
             {authStatus === "not-authenticated" ? (
               <Link to="/auth/login" className="hidden md:block">
@@ -143,36 +144,40 @@ export const CustomHeader = () => {
 
         {isMobileMenuOpen && (
           <div className="border-t border-slate-200 py-3 md:hidden">
-            <nav className="flex flex-col gap-3">
+            <nav className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
               <Link
                 to="/"
                 onClick={closeMobileMenu}
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  !query ? "underline underline-offset-4" : "",
+                  "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 hover:text-primary active:scale-[0.99]",
+                  !query ? "bg-slate-100 text-primary" : "",
                 )}
               >
                 Inicio
+                <ChevronRight className="h-4 w-4 text-slate-400" />
               </Link>
               {isOrderingDisabled ? (
-                <span className="text-sm font-medium text-muted-foreground cursor-not-allowed">
+                <span className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground cursor-not-allowed">
                   Pedido
+                  <ChevronRight className="h-4 w-4 text-slate-300" />
                 </span>
               ) : (
                 <Link
                   to="/pedidos"
                   onClick={closeMobileMenu}
-                  className="text-sm font-medium transition-colors hover:text-primary"
+                  className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 hover:text-primary active:scale-[0.99]"
                 >
                   Pedido
+                  <ChevronRight className="h-4 w-4 text-slate-400" />
                 </Link>
               )}
               <Link
                 to="/historial"
                 onClick={closeMobileMenu}
-                className="text-sm font-medium transition-colors hover:text-primary"
+                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-100 hover:text-primary active:scale-[0.99]"
               >
                 Historial
+                <ChevronRight className="h-4 w-4 text-slate-400" />
               </Link>
               {authStatus === "not-authenticated" ? (
                 <Link to="/auth/login" onClick={closeMobileMenu}>
