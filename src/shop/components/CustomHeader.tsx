@@ -1,6 +1,6 @@
 import { ChevronRight, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useCartStore } from "@/shop/store/cart.store";
 export const CustomHeader = () => {
   const cartTotalKg = useCartStore((state) => state.getTotalKg());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const { authStatus, isAdmin, logout, user } = useAuthStore();
@@ -20,26 +21,39 @@ export const CustomHeader = () => {
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const query = searchParams.get("query") || "";
+  const mobileIconButtonClass =
+    "h-10 w-10 rounded-full border-slate-300 bg-white shadow-sm transition-transform active:scale-95";
 
-  const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
-    const nextQuery = inputRef.current?.value;
+  const applySearch = (value: string) => {
+    const nextQuery = value.trim();
     const newSearchParams = new URLSearchParams();
     if (!nextQuery) {
-      newSearchParams.delete("query");
+      setSearchParams(newSearchParams);
       return;
     }
-    newSearchParams.set("query", inputRef.current!.value);
+    newSearchParams.set("query", nextQuery);
     setSearchParams(newSearchParams);
   };
 
+  const handleSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    applySearch(event.currentTarget.value);
+  };
+
+  const handleMobileSearch = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    applySearch(event.currentTarget.value);
+    setIsMobileSearchOpen(false);
+  };
+
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+  const closeMobileSearch = () => setIsMobileSearchOpen(false);
 
   const handleLogout = () => {
     logout();
     closeMobileMenu();
+    closeMobileSearch();
     navigate("/auth/login");
   };
 
@@ -73,12 +87,11 @@ export const CustomHeader = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="hidden md:flex items-center space-x-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  ref={inputRef}
                   placeholder="Buscar productos..."
                   className="pl-9 w-64 h-9 bg-white"
                   onKeyDown={handleSearch}
@@ -87,13 +100,63 @@ export const CustomHeader = () => {
               </div>
             </div>
 
+            <div className="flex items-center gap-2 md:hidden">
+              <div
+                className={cn(
+                  "overflow-hidden transition-all duration-200",
+                  isMobileSearchOpen ? "w-44 opacity-100" : "w-0 opacity-0 pointer-events-none",
+                )}
+              >
+                <div className="relative w-44">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar productos..."
+                    className="h-10 w-full border-slate-300 bg-white pl-9"
+                    onKeyDown={handleMobileSearch}
+                    defaultValue={query}
+                  />
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                className={mobileIconButtonClass}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsMobileSearchOpen((prev) => !prev);
+                }}
+                aria-expanded={isMobileSearchOpen}
+                aria-label={isMobileSearchOpen ? "Cerrar busqueda" : "Abrir busqueda"}
+              >
+                {isMobileSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+              </Button>
+            </div>
 
             {isOrderingDisabled ? (
-              <Button variant="ghost" size="icon" className="relative" disabled>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "relative md:h-9 md:w-9 md:rounded-md md:border-transparent md:bg-transparent md:shadow-none md:active:scale-100",
+                  mobileIconButtonClass,
+                  isMobileSearchOpen && "hidden md:inline-flex",
+                )}
+                disabled
+              >
                 <ShoppingBag className="h-5 w-5" />
               </Button>
             ) : (
-              <Button variant="ghost" size="icon" className="relative" asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "relative md:h-9 md:w-9 md:rounded-md md:border-transparent md:bg-transparent md:shadow-none md:active:scale-100",
+                  mobileIconButtonClass,
+                  isMobileSearchOpen && "hidden md:inline-flex",
+                )}
+                asChild
+              >
                 <Link to="/pedidos">
                   <ShoppingBag className="h-5 w-5" />
                   {cartTotalKg > 0 && (
@@ -108,8 +171,11 @@ export const CustomHeader = () => {
             <Button
               variant="outline"
               size="icon"
-              className="md:hidden h-10 w-10 rounded-full border-slate-300 bg-white shadow-sm transition-transform active:scale-95"
-              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className={cn("md:hidden", mobileIconButtonClass, isMobileSearchOpen && "hidden")}
+              onClick={() => {
+                setIsMobileSearchOpen(false);
+                setIsMobileMenuOpen((prev) => !prev);
+              }}
               aria-expanded={isMobileMenuOpen}
               aria-label={isMobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
             >
