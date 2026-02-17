@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
-import { Minus, Plus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingBag } from "lucide-react";
 
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { ProductCard } from "@/shop/components/ProductCart";
@@ -26,7 +26,7 @@ export const ProductPage = () => {
 
   const galleryImages = useMemo(() => {
     if (!product?.images?.length) return [];
-    return Array.from(new Set(product.images)).slice(0, 3);
+    return Array.from(new Set(product.images));
   }, [product]);
 
   const user = useAuthStore((state) => state.user);
@@ -44,6 +44,7 @@ export const ProductPage = () => {
 
   const [quantity, setQuantity] = useState(1);
   const [isBox, setIsBox] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const addItem = useCartStore((state) => state.addItem);
 
   if (isLoading) {
@@ -66,55 +67,85 @@ export const ProductPage = () => {
     );
   }
 
-  const mainImage = galleryImages[0];
-  const extraImages = galleryImages.slice(1);
+  const mainImage =
+    selectedImage && galleryImages.includes(selectedImage)
+      ? selectedImage
+      : galleryImages[0];
+  const hasMultipleImages = galleryImages.length > 1;
 
   return (
     <section className="py-10 px-4 lg:px-8">
       <div className="container mx-auto">
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <Link to="/" className="hover:text-foreground">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
               Inicio
             </Link>
-            <span>/</span>
-            <span className="text-foreground">{product.title}</span>
+            <span className="text-sm text-muted-foreground">/</span>
+            <span className="text-sm text-foreground">{product.title}</span>
           </div>
-          <Link to="/" className="hover:text-foreground">
-            Volver al catalogo
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver al inicio
+            </Link>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="space-y-4">
-            <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted/60">
-              {mainImage ? (
-                <img
-                  src={mainImage}
-                  alt={product.title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  Imagen no disponible
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+          <div className="space-y-3 lg:max-w-xl">
+            <div className="grid gap-3 lg:grid-cols-[84px_1fr]">
+              {hasMultipleImages && (
+                <div className="order-2 lg:order-1">
+                  <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+                    {galleryImages.map((image, index) => (
+                      <button
+                        key={`${image}-${index}`}
+                        type="button"
+                        onClick={() => setSelectedImage(image)}
+                        className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border bg-muted/30 transition-colors ${
+                          image === mainImage
+                            ? "border-primary ring-2 ring-primary/30"
+                            : "border-border hover:border-primary/40"
+                        }`}
+                        aria-label={`Ver imagen ${index + 1} de ${product.title}`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.title} miniatura ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-            {extraImages.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
-                {extraImages.map((image, index) => (
-                  <div
-                    key={`${image}-${index}`}
-                    className="aspect-square overflow-hidden rounded-lg border bg-muted/30"
-                  >
+
+              <div
+                className={`relative overflow-hidden rounded-2xl border bg-muted/60 ${
+                  hasMultipleImages ? "order-1 lg:order-2" : ""
+                }`}
+              >
+                <div className="aspect-[4/3] sm:aspect-[5/4]">
+                  {mainImage ? (
                     <img
-                      src={image}
-                      alt={`${product.title} ${index + 2}`}
+                      src={mainImage}
+                      alt={product.title}
                       className="h-full w-full object-cover"
                     />
-                  </div>
-                ))}
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      Imagen no disponible
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {hasMultipleImages && (
+              <p className="text-xs text-muted-foreground">
+                Toca una miniatura para cambiar la imagen.
+              </p>
             )}
           </div>
 
@@ -209,6 +240,9 @@ export const ProductPage = () => {
               >
                 <ShoppingBag className="h-4 w-4 mr-2" />
                 Agregar al carrito
+              </Button>
+              <Button asChild variant="outline" className="sm:w-auto">
+                <Link to="/">Seguir comprando</Link>
               </Button>
             </div>
           </div>
