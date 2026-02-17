@@ -11,6 +11,12 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
+const statusStyles: Record<string, string> = {
+  pending: "border-amber-200 bg-amber-100 text-amber-800",
+  completed: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  cancelled: "border-rose-200 bg-rose-100 text-rose-800",
+};
+
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("es-AR", {
     dateStyle: "medium",
@@ -56,7 +62,12 @@ export const HistoryPage = () => {
                         {formatDate(order.createdAt)}
                       </p>
                     </div>
-                    <span className="text-sm font-medium">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                        statusStyles[order.status] ||
+                        "border-slate-200 bg-slate-100 text-slate-700"
+                      }`}
+                    >
                       {statusLabels[order.status] || order.status}
                     </span>
                   </div>
