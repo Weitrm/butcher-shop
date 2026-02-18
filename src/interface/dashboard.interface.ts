@@ -18,6 +18,15 @@ export interface DashboardActivityPoint {
   date: string;
   totalKg: number;
   totalOrders: number;
+  products: DashboardActivityProduct[];
+}
+
+export interface DashboardActivityProduct {
+  productId: string;
+  title: string;
+  slug: string;
+  totalKg: number;
+  totalOrders: number;
 }
 
 export interface DashboardRecentOrderItem {

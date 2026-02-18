@@ -8,7 +8,7 @@ interface Props {
     products: Product[]
 }
 
-export const ProductsGrid = ({products}: Props) => {
+export const  ProductsGrid = ({products}: Props) => {
   const [searchParams, setSearchParams] = useSearchParams()
   const viewMode = searchParams.get('viewMode') || 'grid'
   const handleViewModeChange = (mode: 'grid' | 'list') => {

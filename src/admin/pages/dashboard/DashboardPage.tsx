@@ -1,9 +1,13 @@
-﻿import { useEffect, useState } from "react";
-import { Search, ShoppingCart } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, ShoppingCart, X } from "lucide-react";
 import { useSearchParams } from "react-router";
+import { Bar, CartesianGrid, Cell, ComposedChart, Line, XAxis, YAxis } from "recharts";
 
 import { AdminTitle } from "@/admin/components/AdminTitle";
+import { useDashboardStats } from "@/admin/hooks/useDashboardStats";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
+import { CustomPagination } from "@/components/custom/CustomPagination";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -12,13 +16,10 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { DashboardActivityPoint } from "@/interface/dashboard.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
-import { useDashboardStats } from "@/admin/hooks/useDashboardStats";
-import { CustomPagination } from "@/components/custom/CustomPagination";
-import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -44,9 +45,26 @@ const rangeOptions = [
   { value: "year", label: "Año" },
 ] as const;
 
+interface ActivityChartPoint extends DashboardActivityPoint {
+  label: string;
+  shortLabel: string;
+}
+
+interface ChartClickState {
+  activePayload?: Array<{
+    payload?: {
+      date?: string;
+    };
+  }>;
+}
+
 export const DashboardPage = () => {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [selectedActivityDate, setSelectedActivityDate] = useState<string | null>(
+    null,
+  );
+  const [isActivityDetailOpen, setIsActivityDetailOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const pageParam = searchParams.get("page") || "1";
   const rangeParam = searchParams.get("range") || "week";
@@ -78,10 +96,6 @@ export const DashboardPage = () => {
     }
   }, [debouncedQuery, page, searchParams, setSearchParams]);
 
-  if (isLoading && !data) {
-    return <CustomFullScreenLoading />;
-  }
-
   const topProducts = data?.topProducts || [];
   const topProductsPages = data?.topProductsPages || 0;
   const recentOrders = data?.recentOrders || [];
@@ -97,25 +111,53 @@ export const DashboardPage = () => {
     },
   } satisfies ChartConfig;
   const isYearRange = range === "year";
-  const activityData = (data?.activity || []).map((entry) => {
-    const parsedDate = isYearRange
-      ? new Date(`${entry.date}-01T00:00:00`)
-      : new Date(`${entry.date}T00:00:00`);
-    return {
-      ...entry,
-      label: parsedDate.toLocaleDateString("es-AR", {
-        month: isYearRange ? "long" : undefined,
-        year: isYearRange ? "numeric" : undefined,
-        dateStyle: isYearRange ? undefined : "medium",
+  const isMonthRange = range === "month";
+  const xAxisInterval = isMonthRange ? "preserveStartEnd" : 0;
+  const activityData: ActivityChartPoint[] = useMemo(
+    () =>
+      (data?.activity || []).map((entry) => {
+        const parsedDate = isYearRange
+          ? new Date(`${entry.date}-01T00:00:00`)
+          : new Date(`${entry.date}T00:00:00`);
+
+        return {
+          ...entry,
+          products: entry.products || [],
+          label: parsedDate.toLocaleDateString("es-AR", {
+            month: isYearRange ? "long" : undefined,
+            year: isYearRange ? "numeric" : undefined,
+            dateStyle: isYearRange ? undefined : "medium",
+          }),
+          shortLabel: parsedDate.toLocaleDateString(
+            "es-UY",
+            isYearRange
+              ? { month: "short", year: "2-digit" }
+              : { day: "2-digit", month: "short" },
+          ),
+        };
       }),
-      shortLabel: parsedDate.toLocaleDateString(
-        "es-UY",
-        isYearRange
-          ? { month: "short", year: "2-digit" }
-          : { day: "2-digit", month: "short" },
-      ),
-    };
-  });
+    [data?.activity, isYearRange],
+  );
+  const fallbackActivityDate = useMemo(() => {
+    if (activityData.length === 0) {
+      return null;
+    }
+
+    const latestWithOrders = [...activityData]
+      .reverse()
+      .find((entry) => entry.totalOrders > 0);
+
+    return (latestWithOrders || activityData[activityData.length - 1]).date;
+  }, [activityData]);
+  const activeActivityDate =
+    selectedActivityDate &&
+    activityData.some((entry) => entry.date === selectedActivityDate)
+      ? selectedActivityDate
+      : fallbackActivityDate;
+  const selectedActivity = useMemo(
+    () => activityData.find((entry) => entry.date === activeActivityDate) || null,
+    [activityData, activeActivityDate],
+  );
   const rangeHint =
     range === "year"
       ? "Últimos 12 meses."
@@ -129,12 +171,37 @@ export const DashboardPage = () => {
     setSearchParams(nextParams, { replace: true });
   };
 
+  const handleActivityClick = (state: ChartClickState) => {
+    const date = state.activePayload?.[0]?.payload?.date;
+    if (typeof date === "string") {
+      setSelectedActivityDate(date);
+      setIsActivityDetailOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isActivityDetailOpen) return;
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsActivityDetailOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [isActivityDetailOpen]);
+
+  if (isLoading && !data) {
+    return <CustomFullScreenLoading />;
+  }
+
   return (
     <>
       <AdminTitle title="Dashboard" subtitle="Panel de control" />
 
-
-<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="p-6 space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -288,21 +355,22 @@ export const DashboardPage = () => {
         </Card>
       </div>
 
-      <Card className="mb-8">
-        <CardContent className="p-6 space-y-4">
+      <Card className="mb-8 min-w-0 overflow-hidden">
+        <CardContent className="p-6 space-y-4 min-w-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
                 Tendencia de demanda
               </h3>
               <p className="text-sm text-gray-500">
-                {rangeHint} Kg vendidos y pedidos.
+                {rangeHint} Kg vendidos y pedidos. Seleccioná una fecha para ver detalle.
               </p>
             </div>
             <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
               {rangeOptions.map((option) => (
                 <Button
                   key={option.value}
+                  type="button"
                   size="sm"
                   variant={range === option.value ? "default" : "ghost"}
                   className={
@@ -317,45 +385,134 @@ export const DashboardPage = () => {
               ))}
             </div>
           </div>
-          <ChartContainer config={chartConfig} className="h-[260px] w-full">
-            <ComposedChart data={activityData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="shortLabel" tickLine={false} axisLine={false} />
-              <YAxis
-                yAxisId="left"
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend verticalAlign="top" align="right" />
-              <Bar
-                yAxisId="left"
-                dataKey="totalKg"
-                name="Kg"
-                fill="var(--color-totalKg)"
-                radius={[6, 6, 0, 0]}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="totalOrders"
-                name="Pedidos"
-                stroke="var(--color-totalOrders)"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-            </ComposedChart>
-          </ChartContainer>
+          <div className="w-full min-w-0 overflow-hidden">
+            <ChartContainer config={chartConfig} className="h-[260px] w-full min-w-0">
+              <ComposedChart
+                data={activityData}
+                margin={{ top: 10, right: 24, left: 0, bottom: 0 }}
+                onClick={handleActivityClick}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="shortLabel"
+                  tickLine={false}
+                  axisLine={false}
+                  interval={xAxisInterval}
+                  minTickGap={18}
+                  tickMargin={8}
+                />
+                <YAxis
+                  yAxisId="left"
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <ChartTooltip
+                  cursor={{ fill: "rgba(15, 23, 42, 0.05)" }}
+                  content={<ChartTooltipContent />}
+                />
+                <ChartLegend verticalAlign="top" align="right" />
+                <Bar
+                  yAxisId="left"
+                  dataKey="totalKg"
+                  name="Kg"
+                  fill="var(--color-totalKg)"
+                  cursor="pointer"
+                  radius={[6, 6, 0, 0]}
+                >
+                  {activityData.map((entry) => (
+                    <Cell
+                      key={entry.date}
+                      fill="var(--color-totalKg)"
+                      fillOpacity={activeActivityDate === entry.date ? 1 : 0.45}
+                    />
+                  ))}
+                </Bar>
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="totalOrders"
+                  name="Pedidos"
+                  stroke="var(--color-totalOrders)"
+                  strokeWidth={2}
+                  dot={{ r: 4, style: { cursor: "pointer" } }}
+                />
+              </ComposedChart>
+            </ChartContainer>
+          </div>
         </CardContent>
       </Card>
+
+      {isActivityDetailOpen && selectedActivity ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setIsActivityDetailOpen(false)}
+        >
+          <div
+            className="w-[760px] max-w-[calc(100%-2rem)] max-h-[85vh] rounded-xl bg-white shadow-xl overflow-hidden"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Detalle del {selectedActivity.label}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {selectedActivity.totalOrders} pedidos - {selectedActivity.totalKg} kg
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() => setIsActivityDetailOpen(false)}
+                aria-label="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="max-h-[calc(85vh-84px)] overflow-y-auto p-6">
+              {selectedActivity.products.length ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>Kg</TableHead>
+                      <TableHead>Pedidos</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedActivity.products.map((product) => (
+                      <TableRow key={`${selectedActivity.date}-${product.productId}`}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900">{product.title}</span>
+                            <span className="text-xs text-gray-500">{product.slug}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.totalKg} kg</TableCell>
+                        <TableCell>{product.totalOrders}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  No se registraron productos para esta fecha.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
-  )
-}
+  );
+};
