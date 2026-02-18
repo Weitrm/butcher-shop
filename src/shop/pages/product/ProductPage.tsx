@@ -93,8 +93,8 @@ export const ProductPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-          <div className="space-y-3 lg:max-w-xl">
-            <div className="grid gap-3 lg:grid-cols-[84px_1fr]">
+          <div className="space-y-3">
+            <div className="grid gap-3">
               {hasMultipleImages && (
                 <div className="order-2 lg:order-1">
                   <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
