@@ -1,5 +1,10 @@
 import type { Order } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
+import {
+  formatOrderItemSummary,
+  formatOrderUnitsSummary,
+  isOrderPriceAvailable,
+} from "@/lib/order-unit";
 import { Link } from "react-router";
 
 const statusLabels: Record<string, string> = {
@@ -37,7 +42,7 @@ export const LatestOrderPreview = ({ order, isLoading }: LatestOrderPreviewProps
   const items = order.items
     .map((item) => {
       const title = item.product?.title || "Producto";
-      return `${title} (${item.kg}kg${item.isBox ? ", caja" : ""})`;
+      return formatOrderItemSummary(title, item.kg, item.isBox);
     })
     .filter(Boolean);
   const previewItems = items.slice(0, 3);
@@ -71,7 +76,11 @@ export const LatestOrderPreview = ({ order, isLoading }: LatestOrderPreviewProps
       <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
         <span>{formatDate(order.createdAt)}</span>
         <span className="font-semibold text-gray-900">
-          {currencyFormatter(order.totalPrice)} - {order.totalKg} kg
+          {isOrderPriceAvailable(order.items)
+            ? currencyFormatter(order.totalPrice)
+            : "Precio no disponible"}{" "}
+          -{" "}
+          {formatOrderUnitsSummary(order.items, order.totalKg)}
         </span>
       </div>
 

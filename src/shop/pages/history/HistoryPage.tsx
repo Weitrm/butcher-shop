@@ -10,6 +10,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { currencyFormatter } from "@/lib/currency-formatter";
+import {
+  formatOrderItemDetail,
+  formatOrderUnitsSummary,
+  getOrderUnits,
+  isOrderPriceAvailable,
+} from "@/lib/order-unit";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -67,13 +73,23 @@ export const HistoryPage = () => {
     () =>
       orderedOrders.reduce(
         (acc, order) => {
+          const units = getOrderUnits(order.items);
           acc.total += 1;
-          acc.totalKg += order.totalKg;
+          acc.totalKg += units.totalKg;
+          acc.totalBoxes += units.totalBoxes;
           acc.totalPrice += order.totalPrice;
+          if (!isOrderPriceAvailable(order.items)) acc.hasBoxOrders = true;
           if (order.status === "pending") acc.pending += 1;
           return acc;
         },
-        { total: 0, totalKg: 0, totalPrice: 0, pending: 0 },
+        {
+          total: 0,
+          totalKg: 0,
+          totalBoxes: 0,
+          totalPrice: 0,
+          pending: 0,
+          hasBoxOrders: false,
+        },
       ),
     [orderedOrders],
   );
@@ -196,15 +212,21 @@ export const HistoryPage = () => {
             </Card>
             <Card className="border-slate-200 shadow-sm">
               <CardContent className="p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Kg totales</p>
-                <p className="text-2xl font-semibold text-slate-900">{summary.totalKg}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Unidades pedidas
+                </p>
+                <p className="text-xl font-semibold text-slate-900">
+                  {summary.totalKg} kg / {summary.totalBoxes} cajas
+                </p>
               </CardContent>
             </Card>
             <Card className="border-slate-200 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Total gastado</p>
-                <p className="text-2xl font-semibold text-slate-900">
-                  {currencyFormatter(summary.totalPrice)}
+                <p className="text-xl font-semibold text-slate-900">
+                  {summary.hasBoxOrders
+                    ? "Precio no disponible (incluye cajas)"
+                    : currencyFormatter(summary.totalPrice)}
                 </p>
               </CardContent>
             </Card>
@@ -275,12 +297,13 @@ export const HistoryPage = () => {
                           <div>
                             <p className="font-medium">{item.product.title}</p>
                             <p className="text-muted-foreground">
-                              {item.kg} kg x ${item.unitPrice}
-                              {item.isBox ? " (caja)" : ""}
+                              {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
                             </p>
                           </div>
                         </div>
-                        <span className="font-medium">${item.subtotal}</span>
+                        <span className="font-medium">
+                          {item.isBox ? "No disponible" : `$${item.subtotal}`}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -290,7 +313,10 @@ export const HistoryPage = () => {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Total</span>
                     <span className="font-semibold">
-                      ${order.totalPrice} ({order.totalKg} kg)
+                      {isOrderPriceAvailable(order.items)
+                        ? `$${order.totalPrice}`
+                        : "Precio no disponible (incluye cajas)"}{" "}
+                      ({formatOrderUnitsSummary(order.items, order.totalKg)})
                     </span>
                   </div>
                 </CardContent>

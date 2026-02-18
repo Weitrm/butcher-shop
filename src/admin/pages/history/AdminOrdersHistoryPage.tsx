@@ -11,6 +11,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { currencyFormatter } from "@/lib/currency-formatter";
+import {
+  formatOrderItemSummary,
+  formatOrderUnitsSummary,
+  getOrderUnits,
+  isOrderPriceAvailable,
+} from "@/lib/order-unit";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -61,13 +67,23 @@ export const AdminOrdersHistoryPage = () => {
     () =>
       orders.reduce(
         (acc, order) => {
+          const units = getOrderUnits(order.items);
           acc.total += 1;
-          acc.totalKg += order.totalKg;
+          acc.totalKg += units.totalKg;
+          acc.totalBoxes += units.totalBoxes;
           acc.totalPrice += order.totalPrice;
+          if (!isOrderPriceAvailable(order.items)) acc.hasBoxOrders = true;
           if (order.status === "completed") acc.completed += 1;
           return acc;
         },
-        { total: 0, totalKg: 0, totalPrice: 0, completed: 0 },
+        {
+          total: 0,
+          totalKg: 0,
+          totalBoxes: 0,
+          totalPrice: 0,
+          completed: 0,
+          hasBoxOrders: false,
+        },
       ),
     [orders],
   );
@@ -242,15 +258,19 @@ export const AdminOrdersHistoryPage = () => {
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Kg totales</p>
-            <p className="text-2xl font-semibold text-slate-900">{summary.totalKg}</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Unidades</p>
+            <p className="text-xl font-semibold text-slate-900">
+              {summary.totalKg} kg / {summary.totalBoxes} cajas
+            </p>
           </CardContent>
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Total vendido</p>
-            <p className="text-2xl font-semibold text-slate-900">
-              {currencyFormatter(summary.totalPrice)}
+            <p className="text-xl font-semibold text-slate-900">
+              {summary.hasBoxOrders
+                ? "Precio no disponible (incluye cajas)"
+                : currencyFormatter(summary.totalPrice)}
             </p>
           </CardContent>
         </Card>
@@ -270,7 +290,7 @@ export const AdminOrdersHistoryPage = () => {
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Detalle</TableHead>
-                <TableHead>Kg</TableHead>
+                <TableHead>Unidades</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Estado</TableHead>
@@ -313,12 +333,18 @@ export const AdminOrdersHistoryPage = () => {
                     <TableCell>
                       <div className="max-w-[260px] truncate text-sm text-gray-600">
                         {order.items
-                          .map((item) => `${item.product.title} (${item.kg}kg${item.isBox ? ", caja" : ""})`)
+                          .map((item) =>
+                            formatOrderItemSummary(item.product.title, item.kg, item.isBox),
+                          )
                           .join(", ")}
                       </div>
                     </TableCell>
-                    <TableCell>{order.totalKg} kg</TableCell>
-                    <TableCell>{currencyFormatter(order.totalPrice)}</TableCell>
+                    <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
+                    <TableCell>
+                      {isOrderPriceAvailable(order.items)
+                        ? currencyFormatter(order.totalPrice)
+                        : "Precio no disponible"}
+                    </TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
                     <TableCell>
                       <span

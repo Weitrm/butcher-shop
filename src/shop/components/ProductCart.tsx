@@ -51,6 +51,7 @@ export const ProductCard = ({
     return Math.max(0, Math.min(kgLimit, Math.floor(parsed)));
   });
   const [isBox, setIsBox] = useState(false);
+  const quantityLabel = isBox ? "cajas" : "kg";
 
   const addItem = useCartStore((state) => state.addItem);
   const isAddDisabled = isOrderingDisabled || kg < 1;
@@ -66,7 +67,7 @@ export const ProductCard = ({
 
   const handleAddToCart = () => {
     if (kg < 1) {
-      toast.error("Selecciona al menos 1 kg");
+      toast.error(`Selecciona al menos 1 ${isBox ? "caja" : "kg"}`);
       return;
     }
 
@@ -118,9 +119,11 @@ export const ProductCard = ({
         <div className="px-4 pb-4">
           <div className="space-y-3">
             <div>
-              <p className="font-semibold text-lg">${price}</p>
+              <p className="font-semibold text-lg">
+                {isBox ? "Precio no disponible para cajas" : `$${price} / kg`}
+              </p>
               <p className="text-xs text-muted-foreground">
-                {isSuperUser ? "Sin limite de kg" : `Maximo ${kgLimit} kg`}
+                {isSuperUser ? "Sin limite de cantidad" : `Maximo ${kgLimit} ${quantityLabel}`}
               </p>
             </div>
 
@@ -154,7 +157,7 @@ export const ProductCard = ({
                   onClick={() => setKg((prev) => Math.max(0, prev - 1))}
                   disabled={isOrderingDisabled || kg <= 0}
                   className="flex h-8 w-8 min-w-8 shrink-0 items-center justify-center border-r bg-background p-0 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={`Reducir kg para ${name}`}
+                  aria-label={`Reducir ${quantityLabel} para ${name}`}
                 >
                   <Minus className="h-3.5 w-3.5" />
                 </button>
@@ -166,7 +169,7 @@ export const ProductCard = ({
                   value={kg}
                   onChange={handleKgChange}
                   className="h-8 min-w-0 flex-1 rounded-none border-0 px-0 text-center text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  aria-label={`Kg para ${name}`}
+                  aria-label={`${isBox ? "Cajas" : "Kg"} para ${name}`}
                   disabled={isOrderingDisabled}
                 />
                 <button
@@ -174,7 +177,7 @@ export const ProductCard = ({
                   onClick={() => setKg((prev) => Math.min(kgLimit, prev + 1))}
                   disabled={isOrderingDisabled || kg >= kgLimit}
                   className="flex h-8 w-8 min-w-8 shrink-0 items-center justify-center border-l bg-background p-0 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={`Aumentar kg para ${name}`}
+                  aria-label={`Aumentar ${quantityLabel} para ${name}`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>

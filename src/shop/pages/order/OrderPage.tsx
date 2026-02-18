@@ -14,6 +14,13 @@ import { useOrders } from "@/shop/hooks/useOrders";
 import { useOrderSettings } from "@/shop/hooks/useOrderSettings";
 import { useCartStore } from "@/shop/store/cart.store";
 import { useAuthStore } from "@/auth/store/auth.store";
+import {
+  formatOrderItemDetail,
+  formatOrderUnitsSummary,
+  getOrderUnits,
+  getUnitLabel,
+  isOrderPriceAvailable,
+} from "@/lib/order-unit";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -51,7 +58,6 @@ export const OrderPage = () => {
   const maxItems = useCartStore((state) => state.maxItems);
   const setMaxTotalKg = useCartStore((state) => state.setMaxTotalKg);
   const setMaxItems = useCartStore((state) => state.setMaxItems);
-  const totalKg = useCartStore((state) => state.getTotalKg());
   const totalPrice = useCartStore((state) => state.getTotalPrice());
   const updateItemKg = useCartStore((state) => state.updateItemKg);
   const updateItemIsBox = useCartStore((state) => state.updateItemIsBox);
@@ -86,6 +92,7 @@ export const OrderPage = () => {
     const startOfWeek = getStartOfWeekSunday();
     return new Date(latestOrder.createdAt).getTime() >= startOfWeek.getTime();
   }, [isSuperUser, latestOrder?.createdAt]);
+  const orderUnits = useMemo(() => getOrderUnits(items), [items]);
 
   const handleConfirm = async () => {
     if (isOrderingDisabled) return;
@@ -203,11 +210,13 @@ export const OrderPage = () => {
                             <div>
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                ${item.price} / kg
+                                {item.isBox
+                                  ? "Precio no disponible para cajas"
+                                  : `$${item.price} / kg`}
                               </p>
                               {!isSuperUser && (
                                 <p className="text-xs text-muted-foreground">
-                                  Máximo {itemLimit} kg
+                                  Máximo {itemLimit} {item.isBox ? "cajas" : "kg"}
                                 </p>
                               )}
                             </div>
@@ -249,12 +258,12 @@ export const OrderPage = () => {
                                 );
                                 if (!result.ok) {
                                   toast.error(
-                                    result.error || "No se pudo actualizar el kg",
+                                    result.error || "No se pudo actualizar la cantidad",
                                   );
                                 }
                               }}
                               className="h-9 w-24"
-                              aria-label={`Kg para ${item.name}`}
+                              aria-label={`${item.isBox ? "Cajas" : "Kg"} para ${item.name}`}
                               disabled={isOrderingDisabled}
                             />
                             <Button
@@ -274,13 +283,27 @@ export const OrderPage = () => {
                   <Separator />
 
                   <div className="flex flex-col gap-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Total kg</span>
-                      <span className="font-semibold">{totalKg} kg</span>
-                    </div>
+                    {orderUnits.totalKg > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Total kg</span>
+                        <span className="font-semibold">{orderUnits.totalKg} kg</span>
+                      </div>
+                    )}
+                    {orderUnits.totalBoxes > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Total cajas</span>
+                        <span className="font-semibold">
+                          {orderUnits.totalBoxes} {getUnitLabel(true, orderUnits.totalBoxes)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Total</span>
-                      <span className="font-semibold">${totalPrice}</span>
+                      <span className="font-semibold">
+                        {orderUnits.totalBoxes > 0
+                          ? "Precio no disponible (incluye cajas)"
+                          : `$${totalPrice}`}
+                      </span>
                     </div>
                   </div>
 
@@ -343,12 +366,13 @@ export const OrderPage = () => {
                             <div>
                               <p className="font-medium">{item.product.title}</p>
                               <p className="text-muted-foreground">
-                                {item.kg} kg x ${item.unitPrice}
-                                {item.isBox ? " (caja)" : ""}
+                                {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
                               </p>
                             </div>
                           </div>
-                          <span className="font-medium">${item.subtotal}</span>
+                          <span className="font-medium">
+                            {item.isBox ? "No disponible" : `$${item.subtotal}`}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -358,7 +382,10 @@ export const OrderPage = () => {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Total</span>
                       <span className="font-semibold">
-                        ${latestOrder.totalPrice} ({latestOrder.totalKg} kg)
+                        {isOrderPriceAvailable(latestOrder.items)
+                          ? `$${latestOrder.totalPrice}`
+                          : "Precio no disponible (incluye cajas)"}{" "}
+                        ({formatOrderUnitsSummary(latestOrder.items, latestOrder.totalKg)})
                       </span>
                     </div>
                   </CardContent>
@@ -411,12 +438,13 @@ export const OrderPage = () => {
                         <div>
                           <p className="font-medium">{item.product.title}</p>
                           <p className="text-muted-foreground">
-                            {item.kg} kg x ${item.unitPrice}
-                            {item.isBox ? " (caja)" : ""}
+                            {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
                           </p>
                         </div>
                       </div>
-                      <span className="font-medium">${item.subtotal}</span>
+                      <span className="font-medium">
+                        {item.isBox ? "No disponible" : `$${item.subtotal}`}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -426,7 +454,10 @@ export const OrderPage = () => {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Total</span>
                   <span className="font-semibold">
-                    ${latestOrder.totalPrice} ({latestOrder.totalKg} kg)
+                    {isOrderPriceAvailable(latestOrder.items)
+                      ? `$${latestOrder.totalPrice}`
+                      : "Precio no disponible (incluye cajas)"}{" "}
+                    ({formatOrderUnitsSummary(latestOrder.items, latestOrder.totalKg)})
                   </span>
                 </div>
               </CardContent>

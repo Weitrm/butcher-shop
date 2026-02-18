@@ -11,6 +11,11 @@ import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
+import {
+  formatOrderItemSummary,
+  formatOrderUnitsSummary,
+  isOrderPriceAvailable,
+} from "@/lib/order-unit";
 
 const statusOptions: Array<{ value: OrderStatus; label: string }> = [
   { value: "pending", label: "Pendiente" },
@@ -111,7 +116,7 @@ export const AdminOrdersPage = () => {
             <TableHead>Pedido</TableHead>
             <TableHead>Cliente</TableHead>
             <TableHead>Detalle</TableHead>
-            <TableHead>Kg</TableHead>
+            <TableHead>Unidades</TableHead>
             <TableHead>Total</TableHead>
             <TableHead>Fecha</TableHead>
             <TableHead className="text-right">Estado</TableHead>
@@ -150,12 +155,18 @@ export const AdminOrdersPage = () => {
                 <TableCell>
                   <div className="max-w-[260px] truncate text-sm text-gray-600">
                     {order.items
-                      .map((item) => `${item.product.title} (${item.kg}kg${item.isBox ? ", caja" : ""})`)
+                      .map((item) =>
+                        formatOrderItemSummary(item.product.title, item.kg, item.isBox),
+                      )
                       .join(", ")}
                   </div>
                 </TableCell>
-                <TableCell>{order.totalKg} kg</TableCell>
-                <TableCell>{currencyFormatter(order.totalPrice)}</TableCell>
+                <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
+                <TableCell>
+                  {isOrderPriceAvailable(order.items)
+                    ? currencyFormatter(order.totalPrice)
+                    : "Precio no disponible"}
+                </TableCell>
                 <TableCell>{formatDate(order.createdAt)}</TableCell>
                 <TableCell className="text-right">
                   <select

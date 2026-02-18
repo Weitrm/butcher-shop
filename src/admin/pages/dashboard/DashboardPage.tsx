@@ -20,6 +20,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { DashboardActivityPoint } from "@/interface/dashboard.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
+import {
+  formatOrderItemSummary,
+  formatOrderUnitsSummary,
+  isOrderPriceAvailable,
+} from "@/lib/order-unit";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -314,7 +319,11 @@ export const DashboardPage = () => {
                       {order.items
                         .map((item) =>
                           item.product
-                            ? `${item.product.title} (${item.kg}kg${item.isBox ? ", caja" : ""})`
+                            ? formatOrderItemSummary(
+                                item.product.title,
+                                item.kg,
+                                item.isBox,
+                              )
                             : "",
                         )
                         .filter(Boolean)
@@ -323,7 +332,11 @@ export const DashboardPage = () => {
                     <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                       <span>{formatDate(order.createdAt)}</span>
                       <span className="font-semibold text-gray-900">
-                        {currencyFormatter(order.totalPrice)} - {order.totalKg} kg
+                        {isOrderPriceAvailable(order.items)
+                          ? currencyFormatter(order.totalPrice)
+                          : "Precio no disponible"}{" "}
+                        -{" "}
+                        {formatOrderUnitsSummary(order.items, order.totalKg)}
                       </span>
                     </div>
                   </div>

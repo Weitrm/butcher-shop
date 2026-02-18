@@ -85,7 +85,7 @@ const validateItems = (
 
     for (const item of items) {
       if (item.kg > safeMaxKg(item.maxKgPerOrder)) {
-        return `El producto ${item.name} no permite más de ${safeMaxKg(item.maxKgPerOrder)} kg`;
+        return `El producto ${item.name} no permite más de ${safeMaxKg(item.maxKgPerOrder)} ${item.isBox ? "cajas" : "kg"}`;
       }
     }
 
@@ -121,7 +121,7 @@ export const useCartStore = create<CartState>()(
       addItem: (item, options) => {
         const normalizedItem = normalizeCartItem(item);
         if (isInvalidKg(normalizedItem.kg)) {
-          return { ok: false, error: "Ingresa un valor de kg valido" };
+          return { ok: false, error: "Ingresa una cantidad valida" };
         }
 
         const items = get().items.map(normalizeCartItem);
@@ -149,7 +149,7 @@ export const useCartStore = create<CartState>()(
       },
       updateItemKg: (productId, kg, options) => {
         if (isInvalidKg(kg)) {
-          return { ok: false, error: "Ingresa un valor de kg valido" };
+          return { ok: false, error: "Ingresa una cantidad valida" };
         }
 
         const items = get().items.map(normalizeCartItem);
