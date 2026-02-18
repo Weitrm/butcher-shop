@@ -31,8 +31,11 @@ export const AdminProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [maxKgDraft, setMaxKgDraft] = useState("");
   const [isMaxKgDirty, setIsMaxKgDirty] = useState(false);
+  const [maxItemsDraft, setMaxItemsDraft] = useState("");
+  const [isMaxItemsDirty, setIsMaxItemsDirty] = useState(false);
   const status = searchParams.get("status") || "all";
   const maxKgInputValue = isMaxKgDirty ? maxKgDraft : String(settings?.maxTotalKg ?? 10);
+  const maxItemsInputValue = isMaxItemsDirty ? maxItemsDraft : String(settings?.maxItems ?? 2);
 
   const deleteMutation = useMutation({
     mutationFn: deleteProductAction,
@@ -59,27 +62,38 @@ export const AdminProductsPage = () => {
   };
 
   const handleUpdateSettings = async () => {
-    const parsed = Number(maxKgInputValue);
-    if (!Number.isFinite(parsed) || parsed < 1) {
-      toast.error("Ingresa un límite válido mayor que 0");
+    const parsedMaxKg = Number(maxKgInputValue);
+    const parsedMaxItems = Number(maxItemsInputValue);
+    if (!Number.isFinite(parsedMaxKg) || parsedMaxKg < 1) {
+      toast.error("Ingresa un límite de kg válido mayor que 0");
+      return;
+    }
+    if (!Number.isFinite(parsedMaxItems) || parsedMaxItems < 1) {
+      toast.error("Ingresa un límite de productos válido mayor que 0");
       return;
     }
 
     try {
-      const nextValue = Math.floor(parsed);
-      await settingsMutation.mutateAsync(nextValue);
+      const nextMaxKg = Math.floor(parsedMaxKg);
+      const nextMaxItems = Math.floor(parsedMaxItems);
+      await settingsMutation.mutateAsync({
+        maxTotalKg: nextMaxKg,
+        maxItems: nextMaxItems,
+      });
       await queryClient.invalidateQueries({ queryKey: ["order-settings"] });
       await queryClient.invalidateQueries({ queryKey: ["orders"] });
-      setMaxKgDraft(String(nextValue));
+      setMaxKgDraft(String(nextMaxKg));
+      setMaxItemsDraft(String(nextMaxItems));
       setIsMaxKgDirty(false);
-      toast.success("Límite global de kg actualizado");
+      setIsMaxItemsDirty(false);
+      toast.success("Límites globales actualizados");
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const message = error.response?.data?.message;
         const normalizedMessage = Array.isArray(message) ? message.join(", ") : message;
-        toast.error(normalizedMessage || "No se pudo actualizar el límite");
+        toast.error(normalizedMessage || "No se pudieron actualizar los límites");
       } else {
-        toast.error("No se pudo actualizar el límite");
+        toast.error("No se pudieron actualizar los límites");
       }
     }
   };
@@ -122,27 +136,45 @@ export const AdminProductsPage = () => {
       </div>
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-        <p className="text-sm font-medium text-gray-700">Límite global de kg por pedido</p>
+        <p className="text-sm font-medium text-gray-700">Límites globales por pedido</p>
         <p className="mt-1 text-xs text-gray-500">
-          Este límite aplica a usuarios normales. Los superusuarios no tienen límite.
+          Estos límites aplican a usuarios normales. Los superusuarios no tienen límite.
         </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Máximo kg total</p>
+            <Input
+              type="number"
+              min={1}
+              value={maxKgInputValue}
+              onChange={(event) => {
+                setIsMaxKgDirty(true);
+                setMaxKgDraft(event.target.value);
+              }}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Máximo productos distintos</p>
+            <Input
+              type="number"
+              min={1}
+              value={maxItemsInputValue}
+              onChange={(event) => {
+                setIsMaxItemsDirty(true);
+                setMaxItemsDraft(event.target.value);
+              }}
+              className="w-full"
+            />
+          </div>
+        </div>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Input
-            type="number"
-            min={1}
-            value={maxKgInputValue}
-            onChange={(event) => {
-              setIsMaxKgDirty(true);
-              setMaxKgDraft(event.target.value);
-            }}
-            className="w-full sm:w-40"
-          />
           <Button
             onClick={handleUpdateSettings}
             disabled={settingsMutation.isPending}
             className="sm:w-auto"
           >
-            {settingsMutation.isPending ? "Guardando..." : "Guardar límite"}
+            {settingsMutation.isPending ? "Guardando..." : "Guardar límites"}
           </Button>
         </div>
       </div>

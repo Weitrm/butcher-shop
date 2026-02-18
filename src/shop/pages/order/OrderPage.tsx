@@ -48,7 +48,9 @@ export const OrderPage = () => {
 
   const items = useCartStore((state) => state.items);
   const maxTotalKg = useCartStore((state) => state.maxTotalKg);
+  const maxItems = useCartStore((state) => state.maxItems);
   const setMaxTotalKg = useCartStore((state) => state.setMaxTotalKg);
+  const setMaxItems = useCartStore((state) => state.setMaxItems);
   const totalKg = useCartStore((state) => state.getTotalKg());
   const totalPrice = useCartStore((state) => state.getTotalPrice());
   const updateItemKg = useCartStore((state) => state.updateItemKg);
@@ -76,7 +78,8 @@ export const OrderPage = () => {
   useEffect(() => {
     if (!settings?.maxTotalKg) return;
     setMaxTotalKg(settings.maxTotalKg);
-  }, [settings?.maxTotalKg, setMaxTotalKg]);
+    setMaxItems(settings.maxItems);
+  }, [settings?.maxItems, settings?.maxTotalKg, setMaxItems, setMaxTotalKg]);
 
   const hasOrderThisWeek = useMemo(() => {
     if (isSuperUser || !latestOrder?.createdAt) return false;
@@ -163,7 +166,7 @@ export const OrderPage = () => {
                       <p className="text-sm text-muted-foreground">
                         {isSuperUser
                           ? "Modo super usuario: sin limites de kg ni frecuencia."
-                          : `Máximo ${maxTotalKg} kg y 2 productos distintos.`}
+                          : `Máximo ${maxTotalKg} kg y ${maxItems} productos distintos.`}
                       </p>
                     </div>
                     <Button
@@ -440,3 +443,4 @@ export const OrderPage = () => {
     </>
   );
 };
+

@@ -3,12 +3,12 @@ import type { OrderSettings } from "@/interface/order-settings.interface";
 
 type UpdateOrderSettingsPayload = {
   maxTotalKg: number;
+  maxItems: number;
 };
 
 export const updateOrderSettingsAction = async (
-  maxTotalKg: number,
+  payload: UpdateOrderSettingsPayload,
 ): Promise<OrderSettings> => {
-  const payload: UpdateOrderSettingsPayload = { maxTotalKg };
   const { data } = await butcherApi.patch<OrderSettings>("/orders/settings", payload);
   return data;
 };

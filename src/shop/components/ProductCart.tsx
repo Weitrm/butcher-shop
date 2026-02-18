@@ -120,7 +120,7 @@ export const ProductCard = ({
             <div>
               <p className="font-semibold text-lg">${price}</p>
               <p className="text-xs text-muted-foreground">
-                {isSuperUser ? "Sin limite de kg" : `Maximo ${kgLimit} kg por producto`}
+                {isSuperUser ? "Sin limite de kg" : `Maximo ${kgLimit} kg`}
               </p>
             </div>
 

@@ -19,7 +19,9 @@ type CartValidationOptions = {
 type CartState = {
   items: CartItem[];
   maxTotalKg: number;
+  maxItems: number;
   setMaxTotalKg: (maxTotalKg: number) => void;
+  setMaxItems: (maxItems: number) => void;
   addItem: (
     item: CartItem,
     options?: CartValidationOptions,
@@ -38,7 +40,7 @@ type CartState = {
 };
 
 const DEFAULT_MAX_TOTAL_KG = 10;
-const MAX_ITEMS = 2;
+const DEFAULT_MAX_ITEMS = 2;
 
 const isInvalidKg = (kg: number) =>
   !Number.isFinite(kg) || !Number.isInteger(kg) || kg < 1;
@@ -46,6 +48,12 @@ const isInvalidKg = (kg: number) =>
 const safeMaxKg = (value: number | undefined) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_TOTAL_KG;
+  return Math.floor(parsed);
+};
+
+const safeMaxItems = (value: number | undefined) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_ITEMS;
   return Math.floor(parsed);
 };
 
@@ -63,6 +71,7 @@ const normalizeCartItem = (item: Partial<CartItem>): CartItem => ({
 const validateItems = (
   items: CartItem[],
   maxTotalKg: number,
+  maxItems: number,
   options?: CartValidationOptions,
 ) => {
   if (items.some((item) => item.isBox && !item.allowBoxes)) {
@@ -70,8 +79,8 @@ const validateItems = (
   }
 
   if (!options?.ignoreLimits) {
-    if (items.length > MAX_ITEMS) {
-      return "Solo se permiten 2 productos por pedido";
+    if (items.length > safeMaxItems(maxItems)) {
+      return `Solo se permiten ${safeMaxItems(maxItems)} productos por pedido`;
     }
 
     for (const item of items) {
@@ -94,12 +103,20 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       maxTotalKg: DEFAULT_MAX_TOTAL_KG,
+      maxItems: DEFAULT_MAX_ITEMS,
       setMaxTotalKg: (maxTotalKg) =>
         set({
           maxTotalKg:
             Number.isFinite(maxTotalKg) && maxTotalKg > 0
               ? Math.floor(maxTotalKg)
               : DEFAULT_MAX_TOTAL_KG,
+        }),
+      setMaxItems: (maxItems) =>
+        set({
+          maxItems:
+            Number.isFinite(maxItems) && maxItems > 0
+              ? Math.floor(maxItems)
+              : DEFAULT_MAX_ITEMS,
         }),
       addItem: (item, options) => {
         const normalizedItem = normalizeCartItem(item);
@@ -119,7 +136,12 @@ export const useCartStore = create<CartState>()(
             )
           : [...items, normalizedItem];
 
-        const error = validateItems(nextItems, get().maxTotalKg, options);
+        const error = validateItems(
+          nextItems,
+          get().maxTotalKg,
+          get().maxItems,
+          options,
+        );
         if (error) return { ok: false, error };
 
         set({ items: nextItems });
@@ -140,7 +162,12 @@ export const useCartStore = create<CartState>()(
           item.productId === productId ? { ...item, kg } : item,
         );
 
-        const error = validateItems(nextItems, get().maxTotalKg, options);
+        const error = validateItems(
+          nextItems,
+          get().maxTotalKg,
+          get().maxItems,
+          options,
+        );
         if (error) return { ok: false, error };
 
         set({ items: nextItems });
@@ -188,10 +215,14 @@ export const useCartStore = create<CartState>()(
     {
       name: "butcher-cart",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ items: state.items, maxTotalKg: state.maxTotalKg }),
+      partialize: (state) => ({
+        items: state.items,
+        maxTotalKg: state.maxTotalKg,
+        maxItems: state.maxItems,
+      }),
       merge: (persistedState, currentState) => {
         const typedPersisted = persistedState as
-          | { items?: Partial<CartItem>[]; maxTotalKg?: number }
+          | { items?: Partial<CartItem>[]; maxTotalKg?: number; maxItems?: number }
           | undefined;
 
         return {
@@ -203,6 +234,11 @@ export const useCartStore = create<CartState>()(
             Number(typedPersisted?.maxTotalKg) > 0
               ? Math.floor(Number(typedPersisted?.maxTotalKg))
               : DEFAULT_MAX_TOTAL_KG,
+          maxItems:
+            Number.isFinite(typedPersisted?.maxItems) &&
+            Number(typedPersisted?.maxItems) > 0
+              ? Math.floor(Number(typedPersisted?.maxItems))
+              : DEFAULT_MAX_ITEMS,
         };
       },
     },
