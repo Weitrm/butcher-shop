@@ -8,12 +8,14 @@ interface Options {
   scope?: string;
   user?: string;
   product?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export const getAdminOrdersAction = async (
   options: Options = {},
 ): Promise<OrdersResponse> => {
-  const { limit, offset, scope, user, product } = options;
+  const { limit, offset, scope, user, product, fromDate, toDate } = options;
   const { data } = await butcherApi.get<OrdersResponse>("/orders/admin", {
     params: {
       limit,
@@ -21,6 +23,8 @@ export const getAdminOrdersAction = async (
       scope,
       user,
       product,
+      fromDate,
+      toDate,
     },
   });
 

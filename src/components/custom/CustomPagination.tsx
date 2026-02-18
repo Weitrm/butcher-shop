@@ -15,9 +15,10 @@ export const CustomPagination = ({ totalPages }: Props) => {
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
 
-    searchParams.set('page', page.toString());
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', page.toString());
 
-    setSearchParams(searchParams);
+    setSearchParams(nextParams);
   };
 
   return (
@@ -25,7 +26,7 @@ export const CustomPagination = ({ totalPages }: Props) => {
       <Button
         variant="outline"
         size="sm"
-        disabled={page === 1}
+        disabled={totalPages === 0 || page === 1}
         onClick={() => handlePageChange(page - 1)}
       >
         <ChevronLeft className="h-4 w-4" />
@@ -46,7 +47,7 @@ export const CustomPagination = ({ totalPages }: Props) => {
       <Button
         variant="outline"
         size="sm"
-        disabled={page === totalPages}
+        disabled={totalPages === 0 || page === totalPages}
         onClick={() => handlePageChange(page + 1)}
       >
         Siguientes

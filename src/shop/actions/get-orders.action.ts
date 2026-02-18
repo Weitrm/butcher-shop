@@ -5,16 +5,20 @@ import { mapOrdersImages } from "./order.mapper";
 interface Options {
   limit?: number | string;
   offset?: number | string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export const getOrdersAction = async (
   options: Options = {},
 ): Promise<OrdersResponse> => {
-  const { limit, offset } = options;
+  const { limit, offset, fromDate, toDate } = options;
   const { data } = await butcherApi.get<OrdersResponse>('/orders', {
     params: {
       limit,
       offset,
+      fromDate,
+      toDate,
     },
   });
 
