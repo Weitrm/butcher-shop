@@ -12,6 +12,6 @@ export interface Product {
     allowBoxes:  boolean;
     gender:      string;
     images:      string[];
-    user:        User;
+    user:        User | null;
 }
 

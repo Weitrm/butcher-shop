@@ -30,5 +30,5 @@ export interface Order {
     employeeNumber: string;
     nationalId: string;
     isSuperUser?: boolean;
-  };
+  } | null;
 }
