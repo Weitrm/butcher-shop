@@ -1,4 +1,6 @@
 import { useState, type CSSProperties } from "react";
+import { useSearchParams } from "react-router";
+import { Search, X } from "lucide-react";
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,6 +11,9 @@ import { updateOrderStatusAction } from "@/admin/actions/update-order-status.act
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { CustomPagination } from "@/components/custom/CustomPagination";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
@@ -42,10 +47,16 @@ const formatDate = (value: string) =>
   });
 
 export const AdminOrdersPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialUser = searchParams.get("user") || "";
+  const initialProduct = searchParams.get("product") || "";
+  const [userQuery, setUserQuery] = useState(initialUser);
+  const [productQuery, setProductQuery] = useState(initialProduct);
   const { data, isLoading } = useAdminOrders({ scope: "week" });
   const orders = data?.orders || [];
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const hasActiveFilters = Boolean(searchParams.get("user") || searchParams.get("product"));
 
   const summary = orders.reduce(
     (acc, order) => {
@@ -83,6 +94,32 @@ export const AdminOrdersPage = () => {
     }
   };
 
+  const handleSearch = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (userQuery.trim()) {
+      nextParams.set("user", userQuery.trim());
+    } else {
+      nextParams.delete("user");
+    }
+    if (productQuery.trim()) {
+      nextParams.set("product", productQuery.trim());
+    } else {
+      nextParams.delete("product");
+    }
+    nextParams.set("page", "1");
+    setSearchParams(nextParams);
+  };
+
+  const handleClear = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("user");
+    nextParams.delete("product");
+    nextParams.set("page", "1");
+    setSearchParams(nextParams);
+    setUserQuery("");
+    setProductQuery("");
+  };
+
   if (isLoading) {
     return <CustomFullScreenLoading />;
   }
@@ -91,7 +128,52 @@ export const AdminOrdersPage = () => {
     <>
       <AdminTitle title="Órdenes" subtitle="Pedidos de la semana" />
 
-      <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
+      <Card className="mb-6 border-slate-200 shadow-sm">
+        <CardContent className="space-y-4 bg-gradient-to-r from-white via-slate-50 to-white p-6">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Buscar por cliente</label>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  value={userQuery}
+                  onChange={(event) => setUserQuery(event.target.value)}
+                  placeholder="Nombre, funcionario o cedula"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Buscar por producto</label>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  value={productQuery}
+                  onChange={(event) => setProductQuery(event.target.value)}
+                  placeholder="Nombre o slug"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleSearch}>Buscar</Button>
+            <Button variant="outline" onClick={handleClear}>
+              <X className="h-4 w-4" />
+              Limpiar
+            </Button>
+          </div>
+
+          {hasActiveFilters ? (
+            <p className="text-xs text-slate-500">
+              Filtros activos aplicados sobre los pedidos de la semana.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs uppercase tracking-wide text-gray-500">Total</p>
           <p className="text-2xl font-semibold text-gray-900">{summary.total}</p>
