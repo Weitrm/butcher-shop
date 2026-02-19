@@ -258,7 +258,7 @@ export const AdminOrdersHistoryPage = () => {
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Unidades</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Total pedidos</p>
             <p className="text-xl font-semibold text-slate-900">
               {summary.totalKg} kg / {summary.totalBoxes} cajas
             </p>

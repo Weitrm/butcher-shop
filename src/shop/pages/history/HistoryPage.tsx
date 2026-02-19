@@ -213,7 +213,7 @@ export const HistoryPage = () => {
             <Card className="border-slate-200 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Unidades pedidas
+                  Total pedidos
                 </p>
                 <p className="text-xl font-semibold text-slate-900">
                   {summary.totalKg} kg / {summary.totalBoxes} cajas
