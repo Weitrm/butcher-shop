@@ -9,6 +9,7 @@ import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSumma
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { updateOrderStatusAction } from "@/admin/actions/update-order-status.action";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
+import { useAdminOrdersSummary } from "@/admin/hooks/useAdminOrdersSummary";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Button } from "@/components/ui/button";
@@ -53,21 +54,14 @@ export const AdminOrdersPage = () => {
   const [userQuery, setUserQuery] = useState(initialUser);
   const [productQuery, setProductQuery] = useState(initialProduct);
   const { data, isLoading } = useAdminOrders({ scope: "week" });
+  const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersSummary({
+    scope: "week",
+  });
   const orders = data?.orders || [];
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const hasActiveFilters = Boolean(searchParams.get("user") || searchParams.get("product"));
-
-  const summary = orders.reduce(
-    (acc, order) => {
-      acc.total += 1;
-      if (order.status === "pending") acc.pending += 1;
-      if (order.status === "completed") acc.completed += 1;
-      if (order.status === "cancelled") acc.cancelled += 1;
-      return acc;
-    },
-    { total: 0, pending: 0, completed: 0, cancelled: 0 },
-  );
+  const summary = summaryData || { total: 0, pending: 0, completed: 0, cancelled: 0 };
 
   const statusMutation = useMutation({
     mutationFn: updateOrderStatusAction,
@@ -78,6 +72,7 @@ export const AdminOrdersPage = () => {
     try {
       await statusMutation.mutateAsync({ orderId, status });
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders-summary"] });
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Estado actualizado");
@@ -176,19 +171,27 @@ export const AdminOrdersPage = () => {
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs uppercase tracking-wide text-gray-500">Total</p>
-          <p className="text-2xl font-semibold text-gray-900">{summary.total}</p>
+          <p className="text-2xl font-semibold text-gray-900">
+            {isSummaryLoading && !summaryData ? "-" : summary.total}
+          </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs uppercase tracking-wide text-gray-500">Pendientes</p>
-          <p className="text-2xl font-semibold text-gray-900">{summary.pending}</p>
+          <p className="text-2xl font-semibold text-gray-900">
+            {isSummaryLoading && !summaryData ? "-" : summary.pending}
+          </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs uppercase tracking-wide text-gray-500">Completados</p>
-          <p className="text-2xl font-semibold text-gray-900">{summary.completed}</p>
+          <p className="text-2xl font-semibold text-gray-900">
+            {isSummaryLoading && !summaryData ? "-" : summary.completed}
+          </p>
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
           <p className="text-xs uppercase tracking-wide text-gray-500">Cancelados</p>
-          <p className="text-2xl font-semibold text-gray-900">{summary.cancelled}</p>
+          <p className="text-2xl font-semibold text-gray-900">
+            {isSummaryLoading && !summaryData ? "-" : summary.cancelled}
+          </p>
         </div>
       </div>
 

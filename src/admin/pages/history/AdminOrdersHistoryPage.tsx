@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
 
 import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
+import { useAdminOrdersHistorySummary } from "@/admin/hooks/useAdminOrdersHistorySummary";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { currencyFormatter } from "@/lib/currency-formatter";
 import {
   formatOrderUnitsSummary,
-  getOrderUnits,
   isOrderPriceAvailable,
 } from "@/lib/order-unit";
 
@@ -54,7 +54,10 @@ export const AdminOrdersHistoryPage = () => {
   const [fromDate, setFromDate] = useState(initialFromDate);
   const [toDate, setToDate] = useState(initialToDate);
   const { data, isLoading } = useAdminOrders({ scope: "history" });
-  const orders = useMemo(() => data?.orders || [], [data?.orders]);
+  const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersHistorySummary({
+    scope: "history",
+  });
+  const orders = data?.orders || [];
   const isInvalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
   const hasActiveFilters = Boolean(
     searchParams.get("user") ||
@@ -62,31 +65,14 @@ export const AdminOrdersHistoryPage = () => {
       searchParams.get("fromDate") ||
       searchParams.get("toDate"),
   );
-
-  const summary = useMemo(
-    () =>
-      orders.reduce(
-        (acc, order) => {
-          const units = getOrderUnits(order.items);
-          acc.total += 1;
-          acc.totalKg += units.totalKg;
-          acc.totalBoxes += units.totalBoxes;
-          acc.totalPrice += order.totalPrice;
-          if (!isOrderPriceAvailable(order.items)) acc.hasBoxOrders = true;
-          if (order.status === "completed") acc.completed += 1;
-          return acc;
-        },
-        {
-          total: 0,
-          totalKg: 0,
-          totalBoxes: 0,
-          totalPrice: 0,
-          completed: 0,
-          hasBoxOrders: false,
-        },
-      ),
-    [orders],
-  );
+  const summary = summaryData || {
+    total: 0,
+    totalKg: 0,
+    totalBoxes: 0,
+    totalPrice: 0,
+    completed: 0,
+    hasBoxOrders: false,
+  };
 
   const handleSearch = () => {
     if (isInvalidDateRange) return;
@@ -253,14 +239,18 @@ export const AdminOrdersHistoryPage = () => {
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Pedidos</p>
-            <p className="text-2xl font-semibold text-slate-900">{summary.total}</p>
+            <p className="text-2xl font-semibold text-slate-900">
+              {isSummaryLoading && !summaryData ? "-" : summary.total}
+            </p>
           </CardContent>
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Total pedidos</p>
             <p className="text-xl font-semibold text-slate-900">
-              {summary.totalKg} kg / {summary.totalBoxes} cajas
+              {isSummaryLoading && !summaryData
+                ? "-"
+                : `${summary.totalKg} kg / ${summary.totalBoxes} cajas`}
             </p>
           </CardContent>
         </Card>
@@ -268,7 +258,9 @@ export const AdminOrdersHistoryPage = () => {
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Total vendido</p>
             <p className="text-xl font-semibold text-slate-900">
-              {summary.hasBoxOrders
+              {isSummaryLoading && !summaryData
+                ? "-"
+                : summary.hasBoxOrders
                 ? "Precio no disponible (incluye cajas)"
                 : currencyFormatter(summary.totalPrice)}
             </p>
@@ -277,7 +269,9 @@ export const AdminOrdersHistoryPage = () => {
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Completados</p>
-            <p className="text-2xl font-semibold text-slate-900">{summary.completed}</p>
+            <p className="text-2xl font-semibold text-slate-900">
+              {isSummaryLoading && !summaryData ? "-" : summary.completed}
+            </p>
           </CardContent>
         </Card>
       </div>
