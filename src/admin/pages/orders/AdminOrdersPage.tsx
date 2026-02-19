@@ -3,6 +3,7 @@ import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { updateOrderStatusAction } from "@/admin/actions/update-order-status.action";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
@@ -12,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import {
-  formatOrderItemSummary,
   formatOrderUnitsSummary,
   isOrderPriceAvailable,
 } from "@/lib/order-unit";
@@ -115,7 +115,7 @@ export const AdminOrdersPage = () => {
           <TableRow>
             <TableHead>Pedido</TableHead>
             <TableHead>Cliente</TableHead>
-            <TableHead>Detalle</TableHead>
+            <TableHead className="w-[320px]">Detalle</TableHead>
             <TableHead>Unidades</TableHead>
             <TableHead>Total</TableHead>
             <TableHead>Fecha</TableHead>
@@ -152,14 +152,8 @@ export const AdminOrdersPage = () => {
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>
-                  <div className="max-w-[260px] truncate text-sm text-gray-600">
-                    {order.items
-                      .map((item) =>
-                        formatOrderItemSummary(item.product.title, item.kg, item.isBox),
-                      )
-                      .join(", ")}
-                  </div>
+                <TableCell className="whitespace-normal">
+                  <OrderItemsSummaryCell items={order.items} />
                 </TableCell>
                 <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
                 <TableCell>

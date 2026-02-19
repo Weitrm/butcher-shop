@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
 
+import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
@@ -12,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import {
-  formatOrderItemSummary,
   formatOrderUnitsSummary,
   getOrderUnits,
   isOrderPriceAvailable,
@@ -289,7 +289,7 @@ export const AdminOrdersHistoryPage = () => {
               <TableRow>
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Detalle</TableHead>
+                <TableHead className="w-[320px]">Detalle</TableHead>
                 <TableHead>Unidades</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Fecha</TableHead>
@@ -330,14 +330,8 @@ export const AdminOrdersHistoryPage = () => {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="max-w-[260px] truncate text-sm text-gray-600">
-                        {order.items
-                          .map((item) =>
-                            formatOrderItemSummary(item.product.title, item.kg, item.isBox),
-                          )
-                          .join(", ")}
-                      </div>
+                    <TableCell className="whitespace-normal">
+                      <OrderItemsSummaryCell items={order.items} />
                     </TableCell>
                     <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
                     <TableCell>

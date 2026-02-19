@@ -307,6 +307,11 @@ export const OrderPage = () => {
                     </div>
                   </div>
 
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                    Los kg y el precio mostrados son estimados. Pueden variar al momento de
+                    preparar el pedido.
+                  </div>
+
                   <Button
                     onClick={handleConfirm}
                     disabled={
