@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { ArrowLeft, Minus, Plus, ShoppingBag } from "lucide-react";
@@ -18,6 +18,15 @@ export const ProductPage = () => {
   const { idSlug } = useParams();
   const { data: product, isLoading } = useProduct(idSlug || "");
   const { data: relatedData } = useProducts();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    if (!isMobile) return;
+
+    window.scrollTo(0, 0);
+  }, [idSlug]);
 
   const relatedProducts = useMemo(() => {
     if (!product || !relatedData?.products?.length) return [];
