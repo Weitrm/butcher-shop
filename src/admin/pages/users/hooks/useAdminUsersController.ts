@@ -1,13 +1,15 @@
-﻿import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 
-import { useAdminUsers } from "@/admin/hooks/useAdminUsers";
-import { updateUserStatusAction } from "@/admin/actions/update-user-status.action";
-import { updateUserPasswordAction } from "@/admin/actions/update-user-password.action";
-import { updateUserSuperUserAction } from "@/admin/actions/update-user-super-user.action";
 import { deleteUserAction } from "@/admin/actions/delete-user.action";
+import { updateUserPasswordAction } from "@/admin/actions/update-user-password.action";
+import { updateUserSectorAction } from "@/admin/actions/update-user-sector.action";
+import { updateUserStatusAction } from "@/admin/actions/update-user-status.action";
+import { updateUserSuperUserAction } from "@/admin/actions/update-user-super-user.action";
+import { useAdminSectors } from "@/admin/hooks/useAdminSectors";
+import { useAdminUsers } from "@/admin/hooks/useAdminUsers";
 import { registerAction } from "@/auth/actions/register.action";
 import { useAuthStore } from "@/auth/store/auth.store";
 
@@ -16,41 +18,65 @@ import { validateCreateUser, validatePassword } from "../utils/userValidators";
 
 const USERS_PAGE_SIZE = 10;
 
-// Controlador de estado y acciones para la pÃ¡gina de usuarios admin.
 export const useAdminUsersController = () => {
   const [isPosting, setIsPosting] = useState(false);
   const isPostingRef = useRef(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [sectorFilter, setSectorFilter] = useState("all");
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const [updatingStatusUserId, setUpdatingStatusUserId] = useState<string | null>(null);
   const [updatingSuperUserId, setUpdatingSuperUserId] = useState<string | null>(null);
-  const [updatingPasswordUserId, setUpdatingPasswordUserId] = useState<string | null>(
-    null,
-  );
+  const [updatingSectorUserId, setUpdatingSectorUserId] = useState<string | null>(null);
+  const [updatingPasswordUserId, setUpdatingPasswordUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [passwordDrafts, setPasswordDrafts] = useState<Record<string, string>>({});
+  const [sectorDrafts, setSectorDrafts] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
-  const { data: users = [], isLoading } = useAdminUsers();
+  const { data: users = [], isLoading: isUsersLoading } = useAdminUsers();
+  const { data: sectors = [], isLoading: isSectorsLoading } = useAdminSectors();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const [searchParams, setSearchParams] = useSearchParams();
   const pageParam = searchParams.get("page") || "1";
   const parsedPage = Number(pageParam);
   const page = Number.isNaN(parsedPage) ? 1 : parsedPage;
-  const previousQueryRef = useRef(searchQuery);
+  const previousFiltersRef = useRef({
+    searchQuery,
+    roleFilter,
+    sectorFilter,
+  });
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === openMenuUserId) || null,
     [openMenuUserId, users],
   );
+
   const normalizedQuery = searchQuery.trim().toLowerCase();
+
   const filteredUsers = useMemo(() => {
-    if (!normalizedQuery) return users;
     return users.filter((user) => {
+      if (roleFilter !== "all") {
+        const hasSuperRole =
+          user.isSuperUser ||
+          (user.roles || []).includes("super-user") ||
+          (user.roles || []).includes("super");
+        if (roleFilter === "super-user" && !hasSuperRole) return false;
+        if (roleFilter !== "super-user" && !(user.roles || []).includes(roleFilter)) {
+          return false;
+        }
+      }
+
+      if (sectorFilter !== "all" && (user.sectorId || "") !== sectorFilter) {
+        return false;
+      }
+
+      if (!normalizedQuery) return true;
       const haystack = [
         user.fullName,
         user.employeeNumber,
         user.nationalId,
+        user.sector?.title,
         (user.roles || []).join(" "),
         user.isSuperUser ? "super usuario" : "normal",
       ]
@@ -60,7 +86,8 @@ export const useAdminUsersController = () => {
 
       return haystack.includes(normalizedQuery);
     });
-  }, [users, normalizedQuery]);
+  }, [users, roleFilter, sectorFilter, normalizedQuery]);
+
   const totalPages = Math.ceil(filteredUsers.length / USERS_PAGE_SIZE);
   const paginatedUsers = useMemo(() => {
     if (!filteredUsers.length) return [];
@@ -71,12 +98,18 @@ export const useAdminUsersController = () => {
   }, [filteredUsers, page, totalPages]);
 
   useEffect(() => {
-    if (previousQueryRef.current === searchQuery) return;
-    previousQueryRef.current = searchQuery;
+    const previous = previousFiltersRef.current;
+    const changed =
+      previous.searchQuery !== searchQuery ||
+      previous.roleFilter !== roleFilter ||
+      previous.sectorFilter !== sectorFilter;
+    if (!changed) return;
+
+    previousFiltersRef.current = { searchQuery, roleFilter, sectorFilter };
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", "1");
     setSearchParams(nextParams);
-  }, [searchQuery, searchParams, setSearchParams]);
+  }, [searchQuery, roleFilter, sectorFilter, searchParams, setSearchParams]);
 
   useEffect(() => {
     const maxPage = totalPages > 0 ? totalPages : 1;
@@ -100,21 +133,16 @@ export const useAdminUsersController = () => {
       const fullName = (formData.get("fullName") as string) || "";
       const employeeNumber = (formData.get("employeeNumber") as string) || "";
       const nationalId = (formData.get("nationalId") as string) || "";
+      const sectorId = ((formData.get("sectorId") as string) || "").trim();
       const password = (formData.get("password") as string) || "";
 
-      const errorMessage = validateCreateUser(
-        fullName,
-        employeeNumber,
-        nationalId,
-        password,
-      );
+      const errorMessage = validateCreateUser(fullName, employeeNumber, nationalId, password);
       if (errorMessage) {
         toast.error(errorMessage);
         return;
       }
 
-      await registerAction(fullName, employeeNumber, nationalId, password);
-
+      await registerAction(fullName, employeeNumber, nationalId, password, sectorId || null);
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
 
       toast.success("Usuario creado correctamente");
@@ -150,6 +178,27 @@ export const useAdminUsersController = () => {
     }
   };
 
+  const handleUpdateSector = async (userId: string) => {
+    if (updatingSectorUserId) return;
+    const draftValue = sectorDrafts[userId];
+    const nextSectorId =
+      draftValue !== undefined
+        ? draftValue || null
+        : users.find((candidate) => candidate.id === userId)?.sectorId || null;
+
+    setUpdatingSectorUserId(userId);
+    try {
+      await updateUserSectorAction(userId, nextSectorId);
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Sector actualizado correctamente");
+      setOpenMenuUserId(null);
+    } catch (error) {
+      toastAxiosError(error, "No se pudo actualizar el sector");
+    } finally {
+      setUpdatingSectorUserId(null);
+    }
+  };
+
   const handleUpdatePassword = async (userId: string) => {
     if (updatingPasswordUserId) return;
     const password = passwordDrafts[userId] || "";
@@ -166,7 +215,7 @@ export const useAdminUsersController = () => {
       setPasswordDrafts((prev) => ({ ...prev, [userId]: "" }));
       setOpenMenuUserId(null);
     } catch (error) {
-      toastAxiosError(error, "No se pudo actualizar la contraseÃ±a");
+      toastAxiosError(error, "No se pudo actualizar la contraseña");
     } finally {
       setUpdatingPasswordUserId(null);
     }
@@ -182,9 +231,7 @@ export const useAdminUsersController = () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success(
-        nextValue
-          ? "Permiso de super usuario activado"
-          : "Permiso de super usuario desactivado",
+        nextValue ? "Permiso de super usuario activado" : "Permiso de super usuario desactivado",
       );
       setOpenMenuUserId(null);
     } catch (error) {
@@ -200,7 +247,7 @@ export const useAdminUsersController = () => {
       toast.error("No puedes eliminar tu propio usuario");
       return;
     }
-    const confirmed = window.confirm("¿Eliminar usuario? Esta acción no se puede deshacer.");
+    const confirmed = window.confirm("Eliminar usuario? Esta accion no se puede deshacer.");
     if (!confirmed) return;
 
     setDeletingUserId(userId);
@@ -216,45 +263,46 @@ export const useAdminUsersController = () => {
     }
   };
 
+  const selectedSectorIdForModal =
+    selectedUser && openMenuUserId
+      ? sectorDrafts[selectedUser.id] ?? selectedUser.sectorId ?? ""
+      : "";
+
   return {
     users,
+    sectors,
     filteredUsers,
     paginatedUsers,
     totalPages,
     searchQuery,
     setSearchQuery,
-    isLoading,
+    roleFilter,
+    setRoleFilter,
+    sectorFilter,
+    setSectorFilter,
+    isLoading: isUsersLoading || isSectorsLoading,
     selectedUser,
+    selectedSectorIdForModal,
     isPosting,
     isFormVisible,
     openMenuUserId,
     updatingStatusUserId,
     updatingSuperUserId,
+    updatingSectorUserId,
     updatingPasswordUserId,
     deletingUserId,
     passwordDrafts,
+    sectorDrafts,
     setIsFormVisible,
     setOpenMenuUserId,
     setPasswordDrafts,
+    setSectorDrafts,
     handleSubmit,
     handleToggleStatus,
     handleToggleSuperUser,
+    handleUpdateSector,
     handleUpdatePassword,
     handleDeleteUser,
   };
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

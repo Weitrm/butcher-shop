@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { createOrderAction } from "@/shop/actions/create-order.action";
 import { useOrders } from "@/shop/hooks/useOrders";
-import { useOrderSettings } from "@/shop/hooks/useOrderSettings";
 import { useCartStore } from "@/shop/store/cart.store";
 import { useAuthStore } from "@/auth/store/auth.store";
 import {
@@ -56,8 +55,6 @@ export const OrderPage = () => {
   const items = useCartStore((state) => state.items);
   const maxTotalKg = useCartStore((state) => state.maxTotalKg);
   const maxItems = useCartStore((state) => state.maxItems);
-  const setMaxTotalKg = useCartStore((state) => state.setMaxTotalKg);
-  const setMaxItems = useCartStore((state) => state.setMaxItems);
   const totalPrice = useCartStore((state) => state.getTotalPrice());
   const updateItemKg = useCartStore((state) => state.updateItemKg);
   const updateItemIsBox = useCartStore((state) => state.updateItemIsBox);
@@ -73,19 +70,12 @@ export const OrderPage = () => {
       user?.roles?.includes("super-user") ||
       user?.roles?.includes("super"),
   );
-
-  const { data: settings } = useOrderSettings();
   const { data, isLoading: isOrdersLoading } = useOrders({
     limit: 1,
     useSearchParams: false,
   });
   const latestOrder = data?.orders[0];
 
-  useEffect(() => {
-    if (!settings?.maxTotalKg) return;
-    setMaxTotalKg(settings.maxTotalKg);
-    setMaxItems(settings.maxItems);
-  }, [settings?.maxItems, settings?.maxTotalKg, setMaxItems, setMaxTotalKg]);
 
   const hasOrderThisWeek = useMemo(() => {
     if (isSuperUser || !latestOrder?.createdAt) return false;
@@ -173,7 +163,7 @@ export const OrderPage = () => {
                       <p className="text-sm text-muted-foreground">
                         {isSuperUser
                           ? "Modo super usuario: sin limites de kg ni frecuencia."
-                          : `Máximo ${maxTotalKg} kg y ${maxItems} productos distintos.`}
+                          : `Limites de sector: ${maxTotalKg ? `${maxTotalKg} kg` : "sin limite de kg"} y ${maxItems ? `${maxItems} productos` : "sin limite de productos"}.`}
                       </p>
                     </div>
                     <Button
@@ -479,4 +469,6 @@ export const OrderPage = () => {
     </>
   );
 };
+
+
 

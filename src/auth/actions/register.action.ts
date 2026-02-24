@@ -6,10 +6,11 @@ export const registerAction = async (
   employeeNumber: string,
   nationalId: string,
   password: string,
+  sectorId?: string | null,
 ): Promise<AuthResponse> => {
   const { data } = await butcherApi.post<AuthResponse>(
     "/auth/register",
-    { fullName, employeeNumber, nationalId, password },
+    { fullName, employeeNumber, nationalId, password, sectorId: sectorId || undefined },
   );
 
   return data;

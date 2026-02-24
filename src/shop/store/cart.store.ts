@@ -18,10 +18,10 @@ type CartValidationOptions = {
 
 type CartState = {
   items: CartItem[];
-  maxTotalKg: number;
-  maxItems: number;
-  setMaxTotalKg: (maxTotalKg: number) => void;
-  setMaxItems: (maxItems: number) => void;
+  maxTotalKg: number | null;
+  maxItems: number | null;
+  setMaxTotalKg: (maxTotalKg: number | null) => void;
+  setMaxItems: (maxItems: number | null) => void;
   addItem: (
     item: CartItem,
     options?: CartValidationOptions,
@@ -39,21 +39,22 @@ type CartState = {
   getTotalItems: () => number;
 };
 
-const DEFAULT_MAX_TOTAL_KG = 10;
-const DEFAULT_MAX_ITEMS = 2;
+const DEFAULT_PRODUCT_MAX_KG = 10;
+const DEFAULT_MAX_TOTAL_KG: number | null = null;
+const DEFAULT_MAX_ITEMS: number | null = null;
 
 const isInvalidKg = (kg: number) =>
   !Number.isFinite(kg) || !Number.isInteger(kg) || kg < 1;
 
-const safeMaxKg = (value: number | undefined) => {
+const parsePositiveIntOrNull = (value: number | null | undefined) => {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_TOTAL_KG;
+  if (!Number.isFinite(parsed) || parsed < 1) return null;
   return Math.floor(parsed);
 };
 
-const safeMaxItems = (value: number | undefined) => {
+const safeItemMaxKg = (value: number | undefined) => {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_ITEMS;
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_PRODUCT_MAX_KG;
   return Math.floor(parsed);
 };
 
@@ -63,35 +64,37 @@ const normalizeCartItem = (item: Partial<CartItem>): CartItem => ({
   price: Number(item.price || 0),
   image: item.image || "",
   kg: Math.max(1, Math.floor(Number(item.kg || 1))),
-  maxKgPerOrder: safeMaxKg(item.maxKgPerOrder),
+  maxKgPerOrder: safeItemMaxKg(item.maxKgPerOrder),
   allowBoxes: Boolean(item.allowBoxes),
   isBox: Boolean(item.isBox) && Boolean(item.allowBoxes),
 });
 
 const validateItems = (
   items: CartItem[],
-  maxTotalKg: number,
-  maxItems: number,
+  maxTotalKg: number | null,
+  maxItems: number | null,
   options?: CartValidationOptions,
 ) => {
   if (items.some((item) => item.isBox && !item.allowBoxes)) {
-    return "Uno o más productos no permiten pedidos por caja";
+    return "Uno o mas productos no permiten pedidos por caja";
   }
 
   if (!options?.ignoreLimits) {
-    if (items.length > safeMaxItems(maxItems)) {
-      return `Solo se permiten ${safeMaxItems(maxItems)} productos por pedido`;
+    const maxItemsLimit = parsePositiveIntOrNull(maxItems);
+    if (maxItemsLimit !== null && items.length > maxItemsLimit) {
+      return `Solo se permiten ${maxItemsLimit} productos por pedido`;
     }
 
     for (const item of items) {
-      if (item.kg > safeMaxKg(item.maxKgPerOrder)) {
-        return `El producto ${item.name} no permite más de ${safeMaxKg(item.maxKgPerOrder)} ${item.isBox ? "cajas" : "kg"}`;
+      if (item.kg > safeItemMaxKg(item.maxKgPerOrder)) {
+        return `El producto ${item.name} no permite mas de ${safeItemMaxKg(item.maxKgPerOrder)} ${item.isBox ? "cajas" : "kg"}`;
       }
     }
 
+    const maxTotalKgLimit = parsePositiveIntOrNull(maxTotalKg);
     const totalKg = items.reduce((total, item) => total + item.kg, 0);
-    if (totalKg > maxTotalKg) {
-      return `El total no puede superar los ${maxTotalKg} kg`;
+    if (maxTotalKgLimit !== null && totalKg > maxTotalKgLimit) {
+      return `El total no puede superar los ${maxTotalKgLimit} kg`;
     }
   }
 
@@ -106,17 +109,11 @@ export const useCartStore = create<CartState>()(
       maxItems: DEFAULT_MAX_ITEMS,
       setMaxTotalKg: (maxTotalKg) =>
         set({
-          maxTotalKg:
-            Number.isFinite(maxTotalKg) && maxTotalKg > 0
-              ? Math.floor(maxTotalKg)
-              : DEFAULT_MAX_TOTAL_KG,
+          maxTotalKg: parsePositiveIntOrNull(maxTotalKg),
         }),
       setMaxItems: (maxItems) =>
         set({
-          maxItems:
-            Number.isFinite(maxItems) && maxItems > 0
-              ? Math.floor(maxItems)
-              : DEFAULT_MAX_ITEMS,
+          maxItems: parsePositiveIntOrNull(maxItems),
         }),
       addItem: (item, options) => {
         const normalizedItem = normalizeCartItem(item);
@@ -222,23 +219,15 @@ export const useCartStore = create<CartState>()(
       }),
       merge: (persistedState, currentState) => {
         const typedPersisted = persistedState as
-          | { items?: Partial<CartItem>[]; maxTotalKg?: number; maxItems?: number }
+          | { items?: Partial<CartItem>[]; maxTotalKg?: number | null; maxItems?: number | null }
           | undefined;
 
         return {
           ...currentState,
           ...typedPersisted,
           items: (typedPersisted?.items || []).map(normalizeCartItem),
-          maxTotalKg:
-            Number.isFinite(typedPersisted?.maxTotalKg) &&
-            Number(typedPersisted?.maxTotalKg) > 0
-              ? Math.floor(Number(typedPersisted?.maxTotalKg))
-              : DEFAULT_MAX_TOTAL_KG,
-          maxItems:
-            Number.isFinite(typedPersisted?.maxItems) &&
-            Number(typedPersisted?.maxItems) > 0
-              ? Math.floor(Number(typedPersisted?.maxItems))
-              : DEFAULT_MAX_ITEMS,
+          maxTotalKg: parsePositiveIntOrNull(typedPersisted?.maxTotalKg),
+          maxItems: parsePositiveIntOrNull(typedPersisted?.maxItems),
         };
       },
     },

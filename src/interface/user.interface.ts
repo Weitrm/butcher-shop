@@ -1,3 +1,5 @@
+import type { Sector } from "./sector.interface";
+
 export interface User {
     id: string;
     fullName: string;
@@ -6,5 +8,7 @@ export interface User {
     isActive: boolean;
     isSuperUser: boolean;
     roles: string[];
+    sectorId?: string | null;
+    sector?: Sector | null;
 }
 

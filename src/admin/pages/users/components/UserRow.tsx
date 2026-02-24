@@ -1,5 +1,6 @@
 import { Settings } from "lucide-react";
 
+import { SectorBadge } from "@/components/custom/SectorBadge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { User } from "@/interface/user.interface";
@@ -28,6 +29,9 @@ export const UserRow = ({ user, isMenuOpen, onOpenActions }: UserRowProps) => {
       <TableCell className="font-medium">{user.fullName}</TableCell>
       <TableCell>{user.employeeNumber}</TableCell>
       <TableCell>{user.nationalId}</TableCell>
+      <TableCell>
+        <SectorBadge title={user.sector?.title} color={user.sector?.color} />
+      </TableCell>
       <TableCell className="text-sm text-gray-600">
         {Array.from(normalizedRoles).join(", ") || "user"}
       </TableCell>

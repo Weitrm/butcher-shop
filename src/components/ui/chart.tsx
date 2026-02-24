@@ -65,7 +65,7 @@ type ChartTooltipContentProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContentProps>(
   (
-    { active, payload, label, hideLabel, labelFormatter, className, ...props },
+    { active, payload, label, hideLabel, labelFormatter, className },
     ref,
   ) => {
     const { config } = React.useContext(ChartContext);
@@ -87,7 +87,6 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
       <div
         ref={ref}
         className={cn("rounded-lg border bg-background p-2 shadow-sm", className)}
-        {...props}
       >
         {!hideLabel && labelText ? (
           <div className="mb-2 text-xs font-medium text-muted-foreground">

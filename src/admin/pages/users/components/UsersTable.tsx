@@ -26,6 +26,7 @@ export const UsersTable = ({
             <TableHead>Nombre</TableHead>
             <TableHead>Funcionario</TableHead>
             <TableHead>Cédula</TableHead>
+            <TableHead>Sector</TableHead>
             <TableHead>Roles</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Acciones</TableHead>
@@ -34,7 +35,7 @@ export const UsersTable = ({
         <TableBody>
           {users.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-gray-500">
+              <TableCell colSpan={7} className="text-center text-sm text-gray-500">
                 {emptyMessage ?? "No hay usuarios registrados."}
               </TableCell>
             </TableRow>

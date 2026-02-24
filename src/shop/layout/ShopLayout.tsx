@@ -1,14 +1,52 @@
-﻿import { Outlet } from "react-router"
-import { CustomHeader } from "../components/CustomHeader"
-import { CustomFooter } from "../components/CustomFooter"
+import { useEffect } from "react"
 import { AlertTriangle } from "lucide-react"
+import { Outlet } from "react-router"
+
 import { useAuthStore } from "@/auth/store/auth.store"
+import { useCartStore } from "@/shop/store/cart.store"
+import { CustomFooter } from "../components/CustomFooter"
+import { CustomHeader } from "../components/CustomHeader"
+
+const toPositiveIntOrNull = (value?: number | null) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 1) return null
+  return Math.floor(parsed)
+}
 
 export const ShopLayout = () => {
   const user = useAuthStore((state) => state.user)
   const authStatus = useAuthStore((state) => state.authStatus)
+  const setMaxTotalKg = useCartStore((state) => state.setMaxTotalKg)
+  const setMaxItems = useCartStore((state) => state.setMaxItems)
+
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false
+
+  const isSuperUser = Boolean(
+    user?.isSuperUser ||
+      user?.roles?.includes("super-user") ||
+      user?.roles?.includes("super"),
+  )
+
+  useEffect(() => {
+    if (authStatus !== "authenticated" || !user || isSuperUser) {
+      setMaxTotalKg(null)
+      setMaxItems(null)
+      return
+    }
+
+    setMaxTotalKg(toPositiveIntOrNull(user.sector?.maxTotalKg))
+    setMaxItems(toPositiveIntOrNull(user.sector?.maxItems))
+  }, [
+    authStatus,
+    isSuperUser,
+    setMaxItems,
+    setMaxTotalKg,
+    user,
+    user?.id,
+    user?.sector?.maxItems,
+    user?.sector?.maxTotalKg,
+  ])
 
   return (
     <div className="min-h-screen bg-background">

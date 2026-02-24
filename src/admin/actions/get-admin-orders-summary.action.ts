@@ -7,6 +7,8 @@ interface Options {
   product?: string;
   fromDate?: string;
   toDate?: string;
+  sectorId?: string;
+  preparationDate?: string;
 }
 
 export interface AdminOrdersSummary {

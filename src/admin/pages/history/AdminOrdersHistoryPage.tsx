@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
 
-import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
 import { AdminTitle } from "@/admin/components/AdminTitle";
+import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
 import { useAdminOrdersHistorySummary } from "@/admin/hooks/useAdminOrdersHistorySummary";
+import { useAdminSectors } from "@/admin/hooks/useAdminSectors";
+import { SectorBadge } from "@/components/custom/SectorBadge";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
 import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Button } from "@/components/ui/button";
@@ -13,10 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { currencyFormatter } from "@/lib/currency-formatter";
-import {
-  formatOrderUnitsSummary,
-  isOrderPriceAvailable,
-} from "@/lib/order-unit";
+import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -49,10 +48,13 @@ export const AdminOrdersHistoryPage = () => {
   const initialProduct = searchParams.get("product") || "";
   const initialFromDate = searchParams.get("fromDate") || "";
   const initialToDate = searchParams.get("toDate") || "";
+  const initialSectorId = searchParams.get("sectorId") || "";
   const [userQuery, setUserQuery] = useState(initialUser);
   const [productQuery, setProductQuery] = useState(initialProduct);
   const [fromDate, setFromDate] = useState(initialFromDate);
   const [toDate, setToDate] = useState(initialToDate);
+  const [sectorId, setSectorId] = useState(initialSectorId);
+  const { data: sectors = [] } = useAdminSectors();
   const { data, isLoading } = useAdminOrders({ scope: "history" });
   const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersHistorySummary({
     scope: "history",
@@ -63,7 +65,8 @@ export const AdminOrdersHistoryPage = () => {
     searchParams.get("user") ||
       searchParams.get("product") ||
       searchParams.get("fromDate") ||
-      searchParams.get("toDate"),
+      searchParams.get("toDate") ||
+      searchParams.get("sectorId"),
   );
   const summary = summaryData || {
     total: 0,
@@ -73,31 +76,22 @@ export const AdminOrdersHistoryPage = () => {
     completed: 0,
     hasBoxOrders: false,
   };
+  const selectedSector = sectors.find((sector) => sector.id === sectorId);
 
   const handleSearch = () => {
     if (isInvalidDateRange) return;
 
     const nextParams = new URLSearchParams(searchParams);
-    if (userQuery.trim()) {
-      nextParams.set("user", userQuery.trim());
-    } else {
-      nextParams.delete("user");
-    }
-    if (productQuery.trim()) {
-      nextParams.set("product", productQuery.trim());
-    } else {
-      nextParams.delete("product");
-    }
-    if (fromDate) {
-      nextParams.set("fromDate", fromDate);
-    } else {
-      nextParams.delete("fromDate");
-    }
-    if (toDate) {
-      nextParams.set("toDate", toDate);
-    } else {
-      nextParams.delete("toDate");
-    }
+    if (userQuery.trim()) nextParams.set("user", userQuery.trim());
+    else nextParams.delete("user");
+    if (productQuery.trim()) nextParams.set("product", productQuery.trim());
+    else nextParams.delete("product");
+    if (fromDate) nextParams.set("fromDate", fromDate);
+    else nextParams.delete("fromDate");
+    if (toDate) nextParams.set("toDate", toDate);
+    else nextParams.delete("toDate");
+    if (sectorId) nextParams.set("sectorId", sectorId);
+    else nextParams.delete("sectorId");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
   };
@@ -108,12 +102,14 @@ export const AdminOrdersHistoryPage = () => {
     nextParams.delete("product");
     nextParams.delete("fromDate");
     nextParams.delete("toDate");
+    nextParams.delete("sectorId");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
     setUserQuery("");
     setProductQuery("");
     setFromDate("");
     setToDate("");
+    setSectorId("");
   };
 
   const handleQuickRange = (days: number) => {
@@ -139,15 +135,13 @@ export const AdminOrdersHistoryPage = () => {
 
   return (
     <>
-      <AdminTitle title="Historial" subtitle="Pedidos anteriores a la semana con filtros avanzados" />
+      <AdminTitle title="Historial" subtitle="Pedidos anteriores a la semana con filtros" />
 
       <Card className="mb-6 border-slate-200 shadow-sm">
         <CardContent className="space-y-4 bg-gradient-to-r from-white via-slate-50 to-white p-6">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Buscar por cliente
-              </label>
+              <label className="text-sm font-medium text-gray-700">Buscar por cliente</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -159,9 +153,7 @@ export const AdminOrdersHistoryPage = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Buscar por producto
-              </label>
+              <label className="text-sm font-medium text-gray-700">Buscar por producto</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -173,9 +165,27 @@ export const AdminOrdersHistoryPage = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Desde
-              </label>
+              <label className="text-sm font-medium text-gray-700">Sector</label>
+              <select
+                value={sectorId}
+                onChange={(event) => setSectorId(event.target.value)}
+                className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todos</option>
+                {sectors.map((sector) => (
+                  <option key={sector.id} value={sector.id}>
+                    {sector.title}
+                  </option>
+                ))}
+              </select>
+              {sectorId && (
+                <div className="mt-2">
+                  <SectorBadge title={selectedSector?.title} color={selectedSector?.color} />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Desde</label>
               <div className="relative mt-2">
                 <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -187,9 +197,7 @@ export const AdminOrdersHistoryPage = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Hasta
-              </label>
+              <label className="text-sm font-medium text-gray-700">Hasta</label>
               <div className="relative mt-2">
                 <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -221,17 +229,15 @@ export const AdminOrdersHistoryPage = () => {
             </Button>
           </div>
 
-          {isInvalidDateRange ? (
+          {isInvalidDateRange && (
             <p className="text-xs font-medium text-rose-600">
               La fecha inicial no puede ser mayor que la fecha final.
             </p>
-          ) : null}
+          )}
 
-          {hasActiveFilters ? (
-            <p className="text-xs text-slate-500">
-              Filtros activos aplicados sobre el historial.
-            </p>
-          ) : null}
+          {hasActiveFilters && (
+            <p className="text-xs text-slate-500">Filtros activos aplicados sobre el historial.</p>
+          )}
         </CardContent>
       </Card>
 
@@ -283,17 +289,19 @@ export const AdminOrdersHistoryPage = () => {
               <TableRow>
                 <TableHead>Pedido</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Sector</TableHead>
                 <TableHead className="w-[320px]">Detalle</TableHead>
                 <TableHead>Unidades</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Fecha</TableHead>
+                <TableHead>Preparacion</TableHead>
                 <TableHead>Estado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-sm text-gray-500">
+                  <TableCell colSpan={9} className="text-center text-sm text-gray-500">
                     {hasActiveFilters
                       ? "No hay pedidos para el filtro seleccionado."
                       : "No hay pedidos en el historial."}
@@ -305,24 +313,31 @@ export const AdminOrdersHistoryPage = () => {
                     <TableCell>#{order.id.slice(0, 8)}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">
-                          {order.user?.fullName || "Sin nombre"}
-                        </span>
+                        <span className="font-medium">{order.user?.fullName || "Sin nombre"}</span>
                         <span className="text-xs text-gray-500">
                           {order.user
                             ? [
                                 order.user.employeeNumber
                                   ? `Func. ${order.user.employeeNumber}`
                                   : null,
-                                order.user.nationalId
-                                  ? `CI ${order.user.nationalId}`
-                                  : null,
+                                order.user.nationalId ? `CI ${order.user.nationalId}` : null,
                               ]
                                 .filter(Boolean)
                                 .join(" , ") || "-"
                             : "-"}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <SectorBadge
+                        title={
+                          order.sectorTitleSnapshot ||
+                          order.user?.sector?.title ||
+                          order.user?.sectorId
+                        }
+                        color={order.sectorColorSnapshot || order.user?.sector?.color}
+                        fallback="-"
+                      />
                     </TableCell>
                     <TableCell className="whitespace-normal">
                       <OrderItemsSummaryCell items={order.items} />
@@ -334,6 +349,7 @@ export const AdminOrdersHistoryPage = () => {
                         : "Precio no disponible"}
                     </TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
+                    <TableCell>{order.preparationDate || "-"}</TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${

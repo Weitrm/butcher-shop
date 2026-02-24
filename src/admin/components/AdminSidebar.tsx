@@ -6,6 +6,7 @@ import {
   BarChart3, 
   FileText, 
   ShoppingCart, 
+  Layers3,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) 
     { icon: Users, label: 'Usuarios', to: '/admin/users' },
     { icon: ShoppingCart, label: 'Órdenes', to: '/admin/orders' },
     { icon: FileText, label: 'Historial', to: '/admin/history' },
+    { icon: Layers3, label: 'Sectores', to: '/admin/sectors' },
   ];
 
   const isActiveRoute = (to: string) => {

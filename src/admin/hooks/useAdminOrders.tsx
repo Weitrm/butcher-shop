@@ -16,6 +16,8 @@ export const useAdminOrders = (options: Options = {}) => {
   const productParam = useSearch ? searchParams.get("product") : null;
   const fromDateParam = useSearch ? searchParams.get("fromDate") : null;
   const toDateParam = useSearch ? searchParams.get("toDate") : null;
+  const sectorIdParam = useSearch ? searchParams.get("sectorId") : null;
+  const preparationDateParam = useSearch ? searchParams.get("preparationDate") : null;
 
   const limit = limitParam ? Number(limitParam) : 10;
   const page = pageParam ? Number(pageParam) : 1;
@@ -35,6 +37,8 @@ export const useAdminOrders = (options: Options = {}) => {
         product: productParam || "",
         fromDate: fromDateParam || "",
         toDate: toDateParam || "",
+        sectorId: sectorIdParam || "",
+        preparationDate: preparationDateParam || "",
       },
     ],
     queryFn: () =>
@@ -46,6 +50,8 @@ export const useAdminOrders = (options: Options = {}) => {
         product: productParam || undefined,
         fromDate: fromDateParam || undefined,
         toDate: toDateParam || undefined,
+        sectorId: sectorIdParam || undefined,
+        preparationDate: preparationDateParam || undefined,
       }),
     staleTime: 1000 * 60,
   });

@@ -43,6 +43,9 @@ const AdminUsersPage = lazy(() =>
 const AdminOrdersHistoryPage = lazy(() =>
   import("./admin/pages/history/AdminOrdersHistoryPage").then((module) => ({ default: module.AdminOrdersHistoryPage })),
 );
+const AdminSectorsPage = lazy(() =>
+  import("./admin/pages/sectors/AdminSectorsPage").then((module) => ({ default: module.AdminSectorsPage })),
+);
 
 const AuthLayout = lazy(() => import("./auth/layout/AuthLayout"));
 const AdminLayout = lazy(() => import("./admin/layouts/AdminLayout"));
@@ -131,6 +134,10 @@ export const appRouter = createHashRouter([
       {
         path: "history",
         element: <AdminOrdersHistoryPage />,
+      },
+      {
+        path: "sectors",
+        element: <AdminSectorsPage />,
       },
     ],
   },

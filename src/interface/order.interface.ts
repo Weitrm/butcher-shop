@@ -21,6 +21,11 @@ export interface Order {
   status: OrderStatus;
   totalKg: number;
   totalPrice: number;
+  sectorIdSnapshot?: string | null;
+  sectorTitleSnapshot?: string | null;
+  sectorColorSnapshot?: string | null;
+  preparationWeekdaySnapshot?: number | null;
+  preparationDate?: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -30,5 +35,12 @@ export interface Order {
     employeeNumber: string;
     nationalId: string;
     isSuperUser?: boolean;
+    sectorId?: string | null;
+    sector?: {
+      id: string;
+      title: string;
+      color?: string;
+      preparationWeekday: number;
+    } | null;
   } | null;
 }

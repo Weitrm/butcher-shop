@@ -1,36 +1,33 @@
 import { useEffect, type FormEvent } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Sector } from "@/interface/sector.interface";
 
 type CreateUserFormCardProps = {
   isVisible: boolean;
   isSubmitting: boolean;
+  sectors: Sector[];
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 };
 
-// Tarjeta con el formulario para crear un usuario.
 export const CreateUserFormCard = ({
   isVisible,
   isSubmitting,
+  sectors,
   onSubmit,
   onClose,
 }: CreateUserFormCardProps) => {
   useEffect(() => {
     if (!isVisible) return;
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
+      if (event.key === "Escape") onClose();
     };
 
     document.addEventListener("keydown", handleEsc);
-    return () => {
-      document.removeEventListener("keydown", handleEsc);
-    };
+    return () => document.removeEventListener("keydown", handleEsc);
   }, [isVisible, onClose]);
 
   if (!isVisible) return null;
@@ -61,7 +58,7 @@ export const CreateUserFormCard = ({
               onClick={onClose}
               aria-label="Cerrar"
             >
-              ✕
+              x
             </Button>
           </div>
           <form onSubmit={onSubmit}>
@@ -77,7 +74,7 @@ export const CreateUserFormCard = ({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="employeeNumber">Número de funcionario</Label>
+                <Label htmlFor="employeeNumber">Numero de funcionario</Label>
                 <Input
                   id="employeeNumber"
                   name="employeeNumber"
@@ -92,7 +89,7 @@ export const CreateUserFormCard = ({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="nationalId">Cédula</Label>
+                <Label htmlFor="nationalId">Cedula</Label>
                 <Input
                   id="nationalId"
                   name="nationalId"
@@ -105,6 +102,22 @@ export const CreateUserFormCard = ({
                   }}
                   required
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="sectorId">Sector</Label>
+                <select
+                  id="sectorId"
+                  name="sectorId"
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  defaultValue=""
+                >
+                  <option value="">Sin sector</option>
+                  {sectors.map((sector) => (
+                    <option key={sector.id} value={sector.id}>
+                      {sector.title}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Contraseña</Label>
