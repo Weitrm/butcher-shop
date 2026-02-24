@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, ShoppingCart, X } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { Bar, CartesianGrid, Cell, ComposedChart, Line, XAxis, YAxis } from "recharts";
@@ -66,6 +66,7 @@ interface ChartClickState {
 export const DashboardPage = () => {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const lastDebouncedQueryRef = useRef(debouncedQuery);
   const [selectedActivityDate, setSelectedActivityDate] = useState<string | null>(
     null,
   );
@@ -94,6 +95,11 @@ export const DashboardPage = () => {
   }, [query]);
 
   useEffect(() => {
+    const hasQueryChanged = lastDebouncedQueryRef.current !== debouncedQuery;
+    lastDebouncedQueryRef.current = debouncedQuery;
+
+    if (!hasQueryChanged || page === 1) return;
+
     if (page !== 1) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.set("page", "1");
