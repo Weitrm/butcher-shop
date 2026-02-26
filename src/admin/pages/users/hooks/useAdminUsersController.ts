@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 
 import { deleteUserAction } from "@/admin/actions/delete-user.action";
+import { updateUserAdminAction } from "@/admin/actions/update-user-admin.action";
 import { updateUserPasswordAction } from "@/admin/actions/update-user-password.action";
 import { updateUserSectorAction } from "@/admin/actions/update-user-sector.action";
 import { updateUserStatusAction } from "@/admin/actions/update-user-status.action";
@@ -27,6 +28,7 @@ export const useAdminUsersController = () => {
   const [sectorFilter, setSectorFilter] = useState("all");
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const [updatingStatusUserId, setUpdatingStatusUserId] = useState<string | null>(null);
+  const [updatingAdminUserId, setUpdatingAdminUserId] = useState<string | null>(null);
   const [updatingSuperUserId, setUpdatingSuperUserId] = useState<string | null>(null);
   const [updatingSectorUserId, setUpdatingSectorUserId] = useState<string | null>(null);
   const [updatingPasswordUserId, setUpdatingPasswordUserId] = useState<string | null>(null);
@@ -241,6 +243,27 @@ export const useAdminUsersController = () => {
     }
   };
 
+  const handleToggleAdmin = async (userId: string, nextValue: boolean) => {
+    if (updatingAdminUserId) return;
+    const isSelf = currentUserId && userId === currentUserId;
+    if (isSelf && !nextValue) {
+      toast.error("No puedes quitarte el permiso de admin a ti mismo");
+      return;
+    }
+
+    setUpdatingAdminUserId(userId);
+    try {
+      await updateUserAdminAction(userId, nextValue);
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success(nextValue ? "Permiso de admin activado" : "Permiso de admin desactivado");
+      setOpenMenuUserId(null);
+    } catch (error) {
+      toastAxiosError(error, "No se pudo actualizar el permiso de admin");
+    } finally {
+      setUpdatingAdminUserId(null);
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (deletingUserId) return;
     if (currentUserId && userId === currentUserId) {
@@ -287,6 +310,7 @@ export const useAdminUsersController = () => {
     isFormVisible,
     openMenuUserId,
     updatingStatusUserId,
+    updatingAdminUserId,
     updatingSuperUserId,
     updatingSectorUserId,
     updatingPasswordUserId,
@@ -299,10 +323,10 @@ export const useAdminUsersController = () => {
     setSectorDrafts,
     handleSubmit,
     handleToggleStatus,
+    handleToggleAdmin,
     handleToggleSuperUser,
     handleUpdateSector,
     handleUpdatePassword,
     handleDeleteUser,
   };
 };
-

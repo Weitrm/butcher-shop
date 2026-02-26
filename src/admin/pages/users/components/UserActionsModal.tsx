@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { KeyRound, ShieldCheck, Trash2, UserCheck, UserX } from "lucide-react";
+import { KeyRound, Shield, ShieldCheck, Trash2, UserCheck, UserX } from "lucide-react";
 
 import { SectorBadge } from "@/components/custom/SectorBadge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ type UserActionsModalProps = {
   selectedSectorId: string;
   password: string;
   isUpdatingStatus: boolean;
+  isUpdatingAdmin: boolean;
   isUpdatingSuperUser: boolean;
   isUpdatingSector: boolean;
   isUpdatingPassword: boolean;
@@ -21,6 +22,7 @@ type UserActionsModalProps = {
   onPasswordChange: (value: string) => void;
   onSectorChange: (value: string) => void;
   onToggleStatus: () => void;
+  onToggleAdmin: () => void;
   onToggleSuperUser: () => void;
   onUpdateSector: () => void;
   onUpdatePassword: () => void;
@@ -34,6 +36,7 @@ export const UserActionsModal = ({
   selectedSectorId,
   password,
   isUpdatingStatus,
+  isUpdatingAdmin,
   isUpdatingSuperUser,
   isUpdatingSector,
   isUpdatingPassword,
@@ -41,6 +44,7 @@ export const UserActionsModal = ({
   onPasswordChange,
   onSectorChange,
   onToggleStatus,
+  onToggleAdmin,
   onToggleSuperUser,
   onUpdateSector,
   onUpdatePassword,
@@ -60,6 +64,7 @@ export const UserActionsModal = ({
     user.isSuperUser ||
     (user.roles || []).includes("super-user") ||
     (user.roles || []).includes("super");
+  const hasAdminRole = (user.roles || []).includes("admin");
   const selectedSector =
     sectors.find((sector) => sector.id === selectedSectorId) ||
     (user.sectorId ? sectors.find((sector) => sector.id === user.sectorId) : undefined);
@@ -94,6 +99,21 @@ export const UserActionsModal = ({
         </div>
 
         <div className="mt-5 space-y-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            disabled={isUpdatingAdmin}
+            onClick={onToggleAdmin}
+          >
+            <Shield className="h-4 w-4" />
+            {isUpdatingAdmin
+              ? "Actualizando..."
+              : hasAdminRole
+              ? "Quitar admin"
+              : "Hacer admin"}
+          </Button>
+
           <Button
             type="button"
             variant="outline"

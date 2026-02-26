@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
 import axios from "axios";
@@ -40,6 +40,18 @@ const statusOptionStyles: Record<OrderStatus, CSSProperties> = {
   cancelled: { backgroundColor: "#FEE2E2", color: "#991B1B" },
 };
 
+const statusPriority: Record<OrderStatus, number> = {
+  pending: 0,
+  completed: 1,
+  cancelled: 2,
+};
+
+const getEmployeeNumberValue = (employeeNumber?: string | null) => {
+  if (!employeeNumber) return Number.MAX_SAFE_INTEGER;
+  const parsed = Number(employeeNumber);
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+};
+
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("es-AR", {
     dateStyle: "medium",
@@ -61,7 +73,21 @@ export const AdminOrdersPage = () => {
   const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersSummary({
     scope: "week",
   });
-  const orders = data?.orders || [];
+  const sortedOrders = useMemo(
+    () =>
+      [...(data?.orders ?? [])].sort((a, b) => {
+        const statusDiff = statusPriority[a.status] - statusPriority[b.status];
+        if (statusDiff !== 0) return statusDiff;
+
+        const employeeNumberDiff =
+          getEmployeeNumberValue(a.user?.employeeNumber) -
+          getEmployeeNumberValue(b.user?.employeeNumber);
+        if (employeeNumberDiff !== 0) return employeeNumberDiff;
+
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }),
+    [data?.orders],
+  );
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const hasActiveFilters = Boolean(
@@ -254,14 +280,14 @@ export const AdminOrdersPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.length === 0 ? (
+          {sortedOrders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="text-center text-sm text-gray-500">
                 No hay pedidos registrados.
               </TableCell>
             </TableRow>
           ) : (
-            orders.map((order) => (
+            sortedOrders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell>#{order.id.slice(0, 8)}</TableCell>
                 <TableCell>

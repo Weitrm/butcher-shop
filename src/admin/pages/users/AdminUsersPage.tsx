@@ -32,6 +32,7 @@ export const AdminUsersPage = () => {
     isFormVisible,
     openMenuUserId,
     updatingStatusUserId,
+    updatingAdminUserId,
     updatingSuperUserId,
     updatingSectorUserId,
     updatingPasswordUserId,
@@ -43,6 +44,7 @@ export const AdminUsersPage = () => {
     setSectorDrafts,
     handleSubmit,
     handleToggleStatus,
+    handleToggleAdmin,
     handleToggleSuperUser,
     handleUpdateSector,
     handleUpdatePassword,
@@ -167,6 +169,7 @@ export const AdminUsersPage = () => {
           selectedSectorId={selectedSectorIdForModal}
           password={passwordDrafts[selectedUser.id] || ""}
           isUpdatingStatus={updatingStatusUserId === selectedUser.id}
+          isUpdatingAdmin={updatingAdminUserId === selectedUser.id}
           isUpdatingSuperUser={updatingSuperUserId === selectedUser.id}
           isUpdatingSector={updatingSectorUserId === selectedUser.id}
           isUpdatingPassword={updatingPasswordUserId === selectedUser.id}
@@ -178,6 +181,9 @@ export const AdminUsersPage = () => {
             setSectorDrafts((prev) => ({ ...prev, [selectedUser.id]: value }))
           }
           onToggleStatus={() => handleToggleStatus(selectedUser.id, !selectedUser.isActive)}
+          onToggleAdmin={() =>
+            handleToggleAdmin(selectedUser.id, !(selectedUser.roles || []).includes("admin"))
+          }
           onToggleSuperUser={() =>
             handleToggleSuperUser(
               selectedUser.id,
