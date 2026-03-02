@@ -23,6 +23,7 @@ type SectorFormState = {
   preparationWeekday: number;
   maxTotalKg: string;
   maxItems: string;
+  maxOrdersPerWeek: string;
   allowAllProducts: boolean;
   allowedProductSlugs: string[];
 };
@@ -47,6 +48,7 @@ const emptyFormState: SectorFormState = {
   preparationWeekday: 1,
   maxTotalKg: "",
   maxItems: "",
+  maxOrdersPerWeek: "",
   allowAllProducts: true,
   allowedProductSlugs: [],
 };
@@ -252,6 +254,7 @@ export const AdminSectorsPage = () => {
       preparationWeekday: form.preparationWeekday,
       maxTotalKg: form.maxTotalKg ? Number(form.maxTotalKg) : null,
       maxItems: form.maxItems ? Number(form.maxItems) : null,
+      maxOrdersPerWeek: form.maxOrdersPerWeek ? Number(form.maxOrdersPerWeek) : null,
       allowAllProducts: form.allowAllProducts,
       allowedProductSlugs: form.allowedProductSlugs,
     };
@@ -275,7 +278,7 @@ export const AdminSectorsPage = () => {
       <Card className="mb-6">
         <CardContent className="p-5">
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
               <div>
                 <label className="text-sm font-medium text-gray-700">Nombre</label>
                 <Input
@@ -327,6 +330,20 @@ export const AdminSectorsPage = () => {
                   min={1}
                   value={form.maxItems}
                   onChange={(event) => setForm((prev) => ({ ...prev, maxItems: event.target.value }))}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Max pedidos/semana (opcional)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.maxOrdersPerWeek}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, maxOrdersPerWeek: event.target.value }))
+                  }
                   className="mt-2"
                 />
               </div>
@@ -418,7 +435,10 @@ export const AdminSectorsPage = () => {
                     <TableCell>{weekdayLabelByValue.get(sector.preparationWeekday) || "-"}</TableCell>
                     <TableCell className="text-sm text-gray-600">
                       {sector.maxTotalKg ? `${sector.maxTotalKg} kg` : "Sin limite kg"} /{" "}
-                      {sector.maxItems ? `${sector.maxItems} items` : "Sin limite items"}
+                      {sector.maxItems ? `${sector.maxItems} items` : "Sin limite items"} /{" "}
+                      {sector.maxOrdersPerWeek
+                        ? `${sector.maxOrdersPerWeek} pedidos/sem`
+                        : "Sin limite semanal"}
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">
                       {sector.allowAllProducts
@@ -441,6 +461,9 @@ export const AdminSectorsPage = () => {
                               preparationWeekday: sector.preparationWeekday,
                               maxTotalKg: sector.maxTotalKg ? String(sector.maxTotalKg) : "",
                               maxItems: sector.maxItems ? String(sector.maxItems) : "",
+                              maxOrdersPerWeek: sector.maxOrdersPerWeek
+                                ? String(sector.maxOrdersPerWeek)
+                                : "",
                               allowAllProducts: sector.allowAllProducts,
                               allowedProductSlugs: [...(sector.allowedProductSlugs || [])],
                             });

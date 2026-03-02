@@ -1,5 +1,15 @@
-import { useEffect } from "react";
-import { KeyRound, Shield, ShieldCheck, Trash2, UserCheck, UserX } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  KeyRound,
+  Shield,
+  ShieldCheck,
+  TicketPlus,
+  Trash2,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 
 import { SectorBadge } from "@/components/custom/SectorBadge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Sector } from "@/interface/sector.interface";
 import type { User } from "@/interface/user.interface";
+import {
+  formatWeeklyOrdersLabel,
+  getBaseWeeklyOrderLimit,
+  getCurrentWeekExtraOrders,
+  getEffectiveWeeklyOrderLimit,
+} from "@/lib/weekly-order-limit";
 
 type UserActionsModalProps = {
   user: User;
@@ -17,6 +33,7 @@ type UserActionsModalProps = {
   isUpdatingAdmin: boolean;
   isUpdatingSuperUser: boolean;
   isUpdatingSector: boolean;
+  isGrantingWeeklyExtraOrders: boolean;
   isUpdatingPassword: boolean;
   isDeleting: boolean;
   onPasswordChange: (value: string) => void;
@@ -25,6 +42,7 @@ type UserActionsModalProps = {
   onToggleAdmin: () => void;
   onToggleSuperUser: () => void;
   onUpdateSector: () => void;
+  onGrantWeeklyExtraOrder: () => void;
   onUpdatePassword: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -39,6 +57,7 @@ export const UserActionsModal = ({
   isUpdatingAdmin,
   isUpdatingSuperUser,
   isUpdatingSector,
+  isGrantingWeeklyExtraOrders,
   isUpdatingPassword,
   isDeleting,
   onPasswordChange,
@@ -47,10 +66,13 @@ export const UserActionsModal = ({
   onToggleAdmin,
   onToggleSuperUser,
   onUpdateSector,
+  onGrantWeeklyExtraOrder,
   onUpdatePassword,
   onDelete,
   onClose,
 }: UserActionsModalProps) => {
+  const [isWeeklyControlsOpen, setIsWeeklyControlsOpen] = useState(false);
+
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -68,6 +90,10 @@ export const UserActionsModal = ({
   const selectedSector =
     sectors.find((sector) => sector.id === selectedSectorId) ||
     (user.sectorId ? sectors.find((sector) => sector.id === user.sectorId) : undefined);
+  const baseWeeklyLimit = getBaseWeeklyOrderLimit(user);
+  const currentWeekExtraOrders = getCurrentWeekExtraOrders(user);
+  const effectiveWeeklyOrderLimit = getEffectiveWeeklyOrderLimit(user);
+  const currentWeekOrdersCount = Math.max(0, Number(user.currentWeekOrdersCount || 0));
 
   return (
     <div
@@ -76,7 +102,7 @@ export const UserActionsModal = ({
     >
       <div
         id={`user-actions-${user.id}`}
-        className="w-[420px] max-w-[calc(100%-2rem)] rounded-xl bg-white p-6 shadow-xl"
+        className="w-[460px] max-w-[calc(100%-2rem)] rounded-xl bg-white p-6 shadow-xl"
         data-user-menu="true"
         onClick={(event) => event.stopPropagation()}
       >
@@ -178,7 +204,59 @@ export const UserActionsModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`password-${user.id}`}>Nueva contraseña</Label>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() => setIsWeeklyControlsOpen((prev) => !prev)}
+            >
+              <span className="flex items-center gap-2">
+                <TicketPlus className="h-4 w-4" />
+                Gestionar limite semanal
+              </span>
+              {isWeeklyControlsOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+
+            {isWeeklyControlsOpen && (
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="space-y-1 text-sm text-slate-700">
+                  <p>
+                    Base sector:{" "}
+                    {baseWeeklyLimit === null
+                      ? "Sin limite"
+                      : formatWeeklyOrdersLabel(baseWeeklyLimit)}
+                  </p>
+                  <p>
+                    Limite efectivo:{" "}
+                    {effectiveWeeklyOrderLimit === null
+                      ? "Sin limite"
+                      : formatWeeklyOrdersLabel(effectiveWeeklyOrderLimit)}
+                  </p>
+                  <p>Extras esta semana: +{currentWeekExtraOrders}</p>
+                  <p>Pedidos usados esta semana: {currentWeekOrdersCount}</p>
+                </div>
+
+                <Button
+                  type="button"
+                  className="w-full justify-start"
+                  disabled={isGrantingWeeklyExtraOrders}
+                  onClick={onGrantWeeklyExtraOrder}
+                >
+                  <TicketPlus className="h-4 w-4" />
+                  {isGrantingWeeklyExtraOrders
+                    ? "Agregando..."
+                    : "Agregar 1 pedido extra esta semana"}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`password-${user.id}`}>Nueva contrasena</Label>
             <Input
               id={`password-${user.id}`}
               type="password"
@@ -194,7 +272,7 @@ export const UserActionsModal = ({
               onClick={onUpdatePassword}
             >
               <KeyRound className="h-4 w-4" />
-              {isUpdatingPassword ? "Actualizando..." : "Actualizar contraseña"}
+              {isUpdatingPassword ? "Actualizando..." : "Actualizar contrasena"}
             </Button>
           </div>
 

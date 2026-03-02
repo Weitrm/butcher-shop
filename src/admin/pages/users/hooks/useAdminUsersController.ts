@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 
+import { createUserWeeklyOrderExceptionAction } from "@/admin/actions/create-user-weekly-order-exception.action";
 import { deleteUserAction } from "@/admin/actions/delete-user.action";
 import { updateUserAdminAction } from "@/admin/actions/update-user-admin.action";
 import { updateUserPasswordAction } from "@/admin/actions/update-user-password.action";
@@ -31,6 +32,9 @@ export const useAdminUsersController = () => {
   const [updatingAdminUserId, setUpdatingAdminUserId] = useState<string | null>(null);
   const [updatingSuperUserId, setUpdatingSuperUserId] = useState<string | null>(null);
   const [updatingSectorUserId, setUpdatingSectorUserId] = useState<string | null>(null);
+  const [creatingWeeklyExceptionUserId, setCreatingWeeklyExceptionUserId] = useState<string | null>(
+    null,
+  );
   const [updatingPasswordUserId, setUpdatingPasswordUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [passwordDrafts, setPasswordDrafts] = useState<Record<string, string>>({});
@@ -201,6 +205,26 @@ export const useAdminUsersController = () => {
     }
   };
 
+  const handleGrantSingleWeeklyExtraOrder = async (userId: string) => {
+    if (creatingWeeklyExceptionUserId) return;
+
+    setCreatingWeeklyExceptionUserId(userId);
+    try {
+      await createUserWeeklyOrderExceptionAction({
+        userId,
+        extraOrders: 1,
+        reason: "Aprobado manualmente desde el panel de usuarios",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Pedido extra semanal habilitado");
+      setOpenMenuUserId(null);
+    } catch (error) {
+      toastAxiosError(error, "No se pudo registrar el pedido extra");
+    } finally {
+      setCreatingWeeklyExceptionUserId(null);
+    }
+  };
+
   const handleUpdatePassword = async (userId: string) => {
     if (updatingPasswordUserId) return;
     const password = passwordDrafts[userId] || "";
@@ -313,6 +337,7 @@ export const useAdminUsersController = () => {
     updatingAdminUserId,
     updatingSuperUserId,
     updatingSectorUserId,
+    creatingWeeklyExceptionUserId,
     updatingPasswordUserId,
     deletingUserId,
     passwordDrafts,
@@ -326,6 +351,7 @@ export const useAdminUsersController = () => {
     handleToggleAdmin,
     handleToggleSuperUser,
     handleUpdateSector,
+    handleGrantSingleWeeklyExtraOrder,
     handleUpdatePassword,
     handleDeleteUser,
   };

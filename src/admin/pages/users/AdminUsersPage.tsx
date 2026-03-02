@@ -35,6 +35,7 @@ export const AdminUsersPage = () => {
     updatingAdminUserId,
     updatingSuperUserId,
     updatingSectorUserId,
+    creatingWeeklyExceptionUserId,
     updatingPasswordUserId,
     deletingUserId,
     passwordDrafts,
@@ -47,6 +48,7 @@ export const AdminUsersPage = () => {
     handleToggleAdmin,
     handleToggleSuperUser,
     handleUpdateSector,
+    handleGrantSingleWeeklyExtraOrder,
     handleUpdatePassword,
     handleDeleteUser,
   } = useAdminUsersController();
@@ -172,6 +174,7 @@ export const AdminUsersPage = () => {
           isUpdatingAdmin={updatingAdminUserId === selectedUser.id}
           isUpdatingSuperUser={updatingSuperUserId === selectedUser.id}
           isUpdatingSector={updatingSectorUserId === selectedUser.id}
+          isGrantingWeeklyExtraOrders={creatingWeeklyExceptionUserId === selectedUser.id}
           isUpdatingPassword={updatingPasswordUserId === selectedUser.id}
           isDeleting={deletingUserId === selectedUser.id}
           onPasswordChange={(value) =>
@@ -195,6 +198,7 @@ export const AdminUsersPage = () => {
             )
           }
           onUpdateSector={() => handleUpdateSector(selectedUser.id)}
+          onGrantWeeklyExtraOrder={() => handleGrantSingleWeeklyExtraOrder(selectedUser.id)}
           onUpdatePassword={() => handleUpdatePassword(selectedUser.id)}
           onDelete={() => handleDeleteUser(selectedUser.id)}
           onClose={() => setOpenMenuUserId(null)}

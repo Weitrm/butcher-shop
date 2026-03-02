@@ -8,6 +8,7 @@ export interface CreateSectorPayload {
   preparationWeekday?: number;
   maxTotalKg?: number | null;
   maxItems?: number | null;
+  maxOrdersPerWeek?: number | null;
   allowAllProducts?: boolean;
   allowedProductSlugs?: string[];
 }

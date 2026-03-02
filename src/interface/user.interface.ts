@@ -10,5 +10,7 @@ export interface User {
     roles: string[];
     sectorId?: string | null;
     sector?: Sector | null;
+    currentWeekExtraOrders?: number | null;
+    currentWeekOrdersCount?: number | null;
 }
 

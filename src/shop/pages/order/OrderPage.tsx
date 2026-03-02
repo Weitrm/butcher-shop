@@ -4,15 +4,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Package, Trash } from "lucide-react";
 
-import { CustomJumbotron } from "@/shop/components/CustomJumbotron";
+import { useAuthStore } from "@/auth/store/auth.store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { createOrderAction } from "@/shop/actions/create-order.action";
-import { useOrders } from "@/shop/hooks/useOrders";
-import { useCartStore } from "@/shop/store/cart.store";
-import { useAuthStore } from "@/auth/store/auth.store";
+import type { Order } from "@/interface/order.interface";
 import {
   formatOrderItemDetail,
   formatOrderUnitsSummary,
@@ -20,6 +17,15 @@ import {
   getUnitLabel,
   isOrderPriceAvailable,
 } from "@/lib/order-unit";
+import {
+  formatWeeklyOrdersLabel,
+  getEffectiveWeeklyOrderLimit,
+  getStartOfWeekSunday,
+} from "@/lib/weekly-order-limit";
+import { createOrderAction } from "@/shop/actions/create-order.action";
+import { CustomJumbotron } from "@/shop/components/CustomJumbotron";
+import { useOrders } from "@/shop/hooks/useOrders";
+import { useCartStore } from "@/shop/store/cart.store";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -41,12 +47,67 @@ const formatDate = (value: string) =>
     timeStyle: "short",
   });
 
-const getStartOfWeekSunday = (reference = new Date()) => {
-  const start = new Date(reference);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - start.getDay());
-  return start;
-};
+const LatestOrderCard = ({ order }: { order: Order }) => (
+  <Card>
+    <CardContent className="p-6 space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Ultimo pedido</h2>
+          <p className="text-sm text-muted-foreground">#{order.id.slice(0, 8)}</p>
+          <p className="text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
+        </div>
+        <span
+          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            statusStyles[order.status] || "border-slate-200 bg-slate-100 text-slate-700"
+          }`}
+        >
+          {statusLabels[order.status] || order.status}
+        </span>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-3">
+        {order.items.map((item) => (
+          <div key={item.id} className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-3">
+              {item.product.images[0] ? (
+                <img
+                  src={item.product.images[0]}
+                  alt={item.product.title}
+                  className="h-12 w-12 rounded-md object-cover"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-md bg-muted/40" />
+              )}
+              <div>
+                <p className="font-medium">{item.product.title}</p>
+                <p className="text-muted-foreground">
+                  {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
+                </p>
+              </div>
+            </div>
+            <span className="font-medium">
+              {item.isBox ? "No disponible" : `$${item.subtotal}`}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">Total</span>
+        <span className="font-semibold">
+          {isOrderPriceAvailable(order.items)
+            ? `$${order.totalPrice}`
+            : "Precio no disponible (incluye cajas)"}{" "}
+          ({formatOrderUnitsSummary(order.items, order.totalKg)})
+        </span>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export const OrderPage = () => {
   const queryClient = useQueryClient();
@@ -70,27 +131,69 @@ export const OrderPage = () => {
       user?.roles?.includes("super-user") ||
       user?.roles?.includes("super"),
   );
-  const { data, isLoading: isOrdersLoading } = useOrders({
+
+  const startOfWeek = useMemo(() => getStartOfWeekSunday(), []);
+  const startOfWeekDate = useMemo(() => startOfWeek.toISOString().slice(0, 10), [startOfWeek]);
+  const effectiveWeeklyOrderLimit = useMemo(() => getEffectiveWeeklyOrderLimit(user), [user]);
+  const { data: latestOrderData, isLoading: isLatestOrderLoading } = useOrders({
     limit: 1,
     useSearchParams: false,
   });
-  const latestOrder = data?.orders[0];
+  const {
+    data: weeklyOrdersData,
+    isLoading: isWeeklyOrdersLoading,
+    isError: isWeeklyOrdersError,
+  } = useOrders({
+    limit: 1,
+    useSearchParams: false,
+    fromDate: startOfWeekDate,
+    enabled: authStatus === "authenticated" && !isSuperUser && effectiveWeeklyOrderLimit !== null,
+    retry: false,
+  });
 
+  const latestOrder = latestOrderData?.orders[0];
+  const ordersThisWeek = isSuperUser ? 0 : weeklyOrdersData?.count || 0;
+  const cannotValidateWeeklyLimit =
+    !isSuperUser && effectiveWeeklyOrderLimit !== null && isWeeklyOrdersError;
+  const hasReachedWeeklyOrderLimit =
+    !isSuperUser &&
+    effectiveWeeklyOrderLimit !== null &&
+    !cannotValidateWeeklyLimit &&
+    !isWeeklyOrdersLoading &&
+    ordersThisWeek >= effectiveWeeklyOrderLimit;
+  const remainingOrdersThisWeek =
+    effectiveWeeklyOrderLimit === null
+      ? null
+      : Math.max(0, effectiveWeeklyOrderLimit - ordersThisWeek);
+  const weeklyLimitDescription = useMemo(() => {
+    if (isSuperUser) return "Modo super usuario: sin limites de kg ni frecuencia.";
+    if (effectiveWeeklyOrderLimit === null) return "Frecuencia semanal: sin limite.";
+    if (isWeeklyOrdersLoading) return "Validando disponibilidad semanal...";
+    return `Frecuencia semanal: ${formatWeeklyOrdersLabel(effectiveWeeklyOrderLimit)}. Te quedan ${formatWeeklyOrdersLabel(remainingOrdersThisWeek || 0)} esta semana.`;
+  }, [
+    effectiveWeeklyOrderLimit,
+    isSuperUser,
+    isWeeklyOrdersLoading,
+    remainingOrdersThisWeek,
+  ]);
 
-  const hasOrderThisWeek = useMemo(() => {
-    if (isSuperUser || !latestOrder?.createdAt) return false;
-    const startOfWeek = getStartOfWeekSunday();
-    return new Date(latestOrder.createdAt).getTime() >= startOfWeek.getTime();
-  }, [isSuperUser, latestOrder?.createdAt]);
   const orderUnits = useMemo(() => getOrderUnits(items), [items]);
 
   const handleConfirm = async () => {
-    if (isOrderingDisabled) return;
-    if (!items.length) return;
-    if (!isSuperUser && hasOrderThisWeek) {
-      toast.error("Ya realizaste un pedido esta semana. Se reinicia los domingos.");
+    if (isOrderingDisabled || !items.length) return;
+    if (cannotValidateWeeklyLimit) {
+      toast.error("No se pudo validar tu limite semanal. Recarga la pagina.");
       return;
     }
+    if (!isSuperUser && hasReachedWeeklyOrderLimit) {
+      const limitLabel =
+        effectiveWeeklyOrderLimit === null
+          ? "el limite semanal"
+          : formatWeeklyOrdersLabel(effectiveWeeklyOrderLimit);
+      toast.error(`Ya alcanzaste ${limitLabel}.`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -108,9 +211,7 @@ export const OrderPage = () => {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const message = error.response?.data?.message;
-        const normalizedMessage = Array.isArray(message)
-          ? message.join(", ")
-          : message;
+        const normalizedMessage = Array.isArray(message) ? message.join(", ") : message;
         toast.error(normalizedMessage || "No se pudo confirmar el pedido");
         return;
       }
@@ -134,20 +235,33 @@ export const OrderPage = () => {
               <CardContent className="flex items-start gap-2 p-4 text-sm">
                 <AlertTriangle className="mt-0.5 h-4 w-4" />
                 <div>
-                  Tu cuenta esta deshabilitada para hacer pedidos. Comunicate con
-                  un supervisor.
+                  Tu cuenta esta deshabilitada para hacer pedidos. Comunicate con un supervisor.
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {!isSuperUser && hasOrderThisWeek && (
+          {!isSuperUser && hasReachedWeeklyOrderLimit && (
             <Card className="border-blue-200 bg-blue-50 text-blue-900">
               <CardContent className="flex items-start gap-2 p-4 text-sm">
                 <AlertTriangle className="mt-0.5 h-4 w-4" />
                 <div>
-                  Ya realizaste un pedido esta semana. Podrás volver a pedir desde el
-                  domingo.
+                  Alcanzaste el limite semanal de{" "}
+                  {effectiveWeeklyOrderLimit === null
+                    ? "pedidos"
+                    : formatWeeklyOrdersLabel(effectiveWeeklyOrderLimit)}
+                  . Si un supervisor te habilita un extra, se reflejara aqui.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {cannotValidateWeeklyLimit && (
+            <Card className="border-rose-200 bg-rose-50 text-rose-900">
+              <CardContent className="flex items-start gap-2 p-4 text-sm">
+                <AlertTriangle className="mt-0.5 h-4 w-4" />
+                <div>
+                  No se pudo validar tu limite semanal. Recarga la pagina antes de confirmar.
                 </div>
               </CardContent>
             </Card>
@@ -162,8 +276,8 @@ export const OrderPage = () => {
                       <h2 className="text-lg font-semibold">Tu pedido</h2>
                       <p className="text-sm text-muted-foreground">
                         {isSuperUser
-                          ? "Modo super usuario: sin limites de kg ni frecuencia."
-                          : `Limites de sector: ${maxTotalKg ? `${maxTotalKg} kg` : "sin limite de kg"} y ${maxItems ? `${maxItems} productos` : "sin limite de productos"}.`}
+                          ? weeklyLimitDescription
+                          : `Limites de sector: ${maxTotalKg ? `${maxTotalKg} kg` : "sin limite de kg"} y ${maxItems ? `${maxItems} productos` : "sin limite de productos"}. ${weeklyLimitDescription}`}
                       </p>
                     </div>
                     <Button
@@ -200,13 +314,11 @@ export const OrderPage = () => {
                             <div>
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {item.isBox
-                                  ? "Precio no disponible para cajas"
-                                  : `$${item.price} / kg`}
+                                {item.isBox ? "Precio no disponible para cajas" : `$${item.price} / kg`}
                               </p>
                               {!isSuperUser && (
                                 <p className="text-xs text-muted-foreground">
-                                  Máximo {itemLimit} {item.isBox ? "cajas" : "kg"}
+                                  Maximo {itemLimit} {item.isBox ? "cajas" : "kg"}
                                 </p>
                               )}
                             </div>
@@ -307,7 +419,10 @@ export const OrderPage = () => {
                     disabled={
                       isSubmitting ||
                       isOrderingDisabled ||
-                      (!isSuperUser && hasOrderThisWeek)
+                      cannotValidateWeeklyLimit ||
+                      (!isSuperUser &&
+                        (hasReachedWeeklyOrderLimit ||
+                          (effectiveWeeklyOrderLimit !== null && isWeeklyOrdersLoading)))
                     }
                   >
                     Confirmar pedido
@@ -315,148 +430,16 @@ export const OrderPage = () => {
                 </CardContent>
               </Card>
 
-              {isOrdersLoading ? (
+              {isLatestOrderLoading ? (
                 <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
               ) : latestOrder ? (
-                <Card>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold">Último pedido</h2>
-                        <p className="text-sm text-muted-foreground">
-                          #{latestOrder.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(latestOrder.createdAt)}
-                        </p>
-                      </div>
-                      <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                          statusStyles[latestOrder.status] ||
-                          "border-slate-200 bg-slate-100 text-slate-700"
-                        }`}
-                      >
-                        {statusLabels[latestOrder.status] || latestOrder.status}
-                      </span>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-3">
-                      {latestOrder.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <div className="flex items-center gap-3">
-                            {item.product.images[0] ? (
-                              <img
-                                src={item.product.images[0]}
-                                alt={item.product.title}
-                                className="h-12 w-12 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 rounded-md bg-muted/40" />
-                            )}
-                            <div>
-                              <p className="font-medium">{item.product.title}</p>
-                              <p className="text-muted-foreground">
-                                {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="font-medium">
-                            {item.isBox ? "No disponible" : `$${item.subtotal}`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="font-semibold">
-                        {isOrderPriceAvailable(latestOrder.items)
-                          ? `$${latestOrder.totalPrice}`
-                          : "Precio no disponible (incluye cajas)"}{" "}
-                        ({formatOrderUnitsSummary(latestOrder.items, latestOrder.totalKg)})
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <LatestOrderCard order={latestOrder} />
               ) : null}
             </>
-          ) : isOrdersLoading ? (
+          ) : isLatestOrderLoading ? (
             <p className="text-sm text-muted-foreground">Cargando pedidos...</p>
           ) : latestOrder ? (
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold">Último pedido</h2>
-                    <p className="text-sm text-muted-foreground">
-                      #{latestOrder.id.slice(0, 8)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(latestOrder.createdAt)}
-                    </p>
-                  </div>
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                      statusStyles[latestOrder.status] ||
-                      "border-slate-200 bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    {statusLabels[latestOrder.status] || latestOrder.status}
-                  </span>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  {latestOrder.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        {item.product.images[0] ? (
-                          <img
-                            src={item.product.images[0]}
-                            alt={item.product.title}
-                            className="h-12 w-12 rounded-md object-cover"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-md bg-muted/40" />
-                        )}
-                        <div>
-                          <p className="font-medium">{item.product.title}</p>
-                          <p className="text-muted-foreground">
-                            {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="font-medium">
-                        {item.isBox ? "No disponible" : `$${item.subtotal}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="font-semibold">
-                    {isOrderPriceAvailable(latestOrder.items)
-                      ? `$${latestOrder.totalPrice}`
-                      : "Precio no disponible (incluye cajas)"}{" "}
-                    ({formatOrderUnitsSummary(latestOrder.items, latestOrder.totalKg)})
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+            <LatestOrderCard order={latestOrder} />
           ) : (
             <Card>
               <CardContent className="p-6 text-center text-sm text-muted-foreground">
@@ -469,6 +452,3 @@ export const OrderPage = () => {
     </>
   );
 };
-
-
-

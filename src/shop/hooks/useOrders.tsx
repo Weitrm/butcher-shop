@@ -7,6 +7,9 @@ interface Options {
   page?: number;
   useSearchParams?: boolean;
   enabled?: boolean;
+  fromDate?: string;
+  toDate?: string;
+  retry?: boolean | number;
 }
 
 export const useOrders = (options: Options = {}) => {
@@ -25,6 +28,8 @@ export const useOrders = (options: Options = {}) => {
   const safeLimit = isNaN(limit) || limit < 1 ? 10 : limit;
   const safePage = isNaN(page) || page < 1 ? 1 : page;
   const offset = (safePage - 1) * safeLimit;
+  const resolvedFromDate = options.fromDate ?? fromDateParam ?? undefined;
+  const resolvedToDate = options.toDate ?? toDateParam ?? undefined;
 
   return useQuery({
     queryKey: [
@@ -32,18 +37,19 @@ export const useOrders = (options: Options = {}) => {
       {
         limit: safeLimit,
         offset,
-        fromDate: fromDateParam || "",
-        toDate: toDateParam || "",
+        fromDate: resolvedFromDate || "",
+        toDate: resolvedToDate || "",
       },
     ],
     queryFn: () =>
       getOrdersAction({
         limit: safeLimit,
         offset,
-        fromDate: fromDateParam || undefined,
-        toDate: toDateParam || undefined,
+        fromDate: resolvedFromDate,
+        toDate: resolvedToDate,
       }),
     staleTime: 1000 * 60,
     enabled: options.enabled ?? true,
+    retry: options.retry,
   });
 };
