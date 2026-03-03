@@ -324,7 +324,7 @@ export const AdminSectorsPage = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Max items (opcional)</label>
+                <label className="text-sm font-medium text-gray-700">Max items</label>
                 <Input
                   type="number"
                   min={1}
@@ -335,7 +335,7 @@ export const AdminSectorsPage = () => {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Max pedidos/semana (opcional)
+                  Max pedidos/semana
                 </label>
                 <Input
                   type="number"
