@@ -7,6 +7,7 @@ import type { Order } from "@/interface/order.interface";
 const STORAGE_KEY = "admin-read-order-notifications";
 const NOTIFICATIONS_LIMIT = 8;
 const MAX_STORED_READ_IDS = 32;
+const NOTIFICATIONS_POLLING_INTERVAL_MS = 1000 * 5;
 
 export interface AdminOrderNotification {
   id: string;
@@ -52,7 +53,8 @@ export const useAdminOrderNotifications = () => {
     queryKey: ["admin-order-notifications"],
     queryFn: () => getAdminOrdersAction({ limit: NOTIFICATIONS_LIMIT, offset: 0 }),
     staleTime: 1000 * 10,
-    refetchInterval: 1000 * 20,
+    refetchInterval: NOTIFICATIONS_POLLING_INTERVAL_MS,
+    refetchIntervalInBackground: true,
   });
 
   const recentOrders = useMemo(
