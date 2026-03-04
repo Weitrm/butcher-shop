@@ -64,10 +64,14 @@ export const AdminOrdersPage = () => {
   const initialProduct = searchParams.get("product") || "";
   const initialSectorId = searchParams.get("sectorId") || "";
   const initialPreparationDate = searchParams.get("preparationDate") || "";
+  const initialStatus = searchParams.get("status") || "all";
+  const initialHasBoxes = searchParams.get("hasBoxes") === "true";
   const [userQuery, setUserQuery] = useState(initialUser);
   const [productQuery, setProductQuery] = useState(initialProduct);
   const [sectorId, setSectorId] = useState(initialSectorId);
   const [preparationDate, setPreparationDate] = useState(initialPreparationDate);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [hasBoxesOnly, setHasBoxesOnly] = useState(initialHasBoxes);
   const { data: sectors = [] } = useAdminSectors();
   const { data, isLoading } = useAdminOrders({ scope: "week" });
   const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersSummary({
@@ -91,10 +95,12 @@ export const AdminOrdersPage = () => {
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const hasActiveFilters = Boolean(
-    searchParams.get("user") ||
+      searchParams.get("user") ||
       searchParams.get("product") ||
       searchParams.get("sectorId") ||
-      searchParams.get("preparationDate"),
+      searchParams.get("preparationDate") ||
+      searchParams.get("status") ||
+      searchParams.get("hasBoxes"),
   );
   const summary = summaryData || { total: 0, pending: 0, completed: 0, cancelled: 0 };
   const selectedSector = sectors.find((sector) => sector.id === sectorId);
@@ -135,6 +141,10 @@ export const AdminOrdersPage = () => {
     else nextParams.delete("sectorId");
     if (preparationDate) nextParams.set("preparationDate", preparationDate);
     else nextParams.delete("preparationDate");
+    if (statusFilter !== "all") nextParams.set("status", statusFilter);
+    else nextParams.delete("status");
+    if (hasBoxesOnly) nextParams.set("hasBoxes", "true");
+    else nextParams.delete("hasBoxes");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
   };
@@ -145,12 +155,16 @@ export const AdminOrdersPage = () => {
     nextParams.delete("product");
     nextParams.delete("sectorId");
     nextParams.delete("preparationDate");
+    nextParams.delete("status");
+    nextParams.delete("hasBoxes");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
     setUserQuery("");
     setProductQuery("");
     setSectorId("");
     setPreparationDate("");
+    setStatusFilter("all");
+    setHasBoxesOnly(false);
   };
 
   if (isLoading) {
@@ -163,7 +177,7 @@ export const AdminOrdersPage = () => {
 
       <Card className="mb-6 border-slate-200 shadow-sm">
         <CardContent className="space-y-4 bg-gradient-to-r from-white via-slate-50 to-white p-6">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <div>
               <label className="text-sm font-medium text-gray-700">Buscar por cliente</label>
               <div className="relative mt-2">
@@ -220,6 +234,32 @@ export const AdminOrdersPage = () => {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Estado</label>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="all">Todos</option>
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={hasBoxesOnly}
+                onChange={(event) => setHasBoxesOnly(event.target.checked)}
+              />
+              Solo pedidos con cajas
+            </label>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -231,9 +271,19 @@ export const AdminOrdersPage = () => {
           </div>
 
           {hasActiveFilters && (
-            <p className="text-xs text-slate-500">
-              Filtros activos aplicados sobre los pedidos de la semana.
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span>Filtros activos aplicados sobre los pedidos de la semana:</span>
+              {statusFilter !== "all" && (
+                <span className="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+                  Estado: {statusOptions.find((item) => item.value === statusFilter)?.label}
+                </span>
+              )}
+              {hasBoxesOnly && (
+                <span className="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+                  Con cajas
+                </span>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -1,10 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
+
 import { getAdminOrdersSummaryAction } from "../actions/get-admin-orders-summary.action";
+import type { OrderStatus } from "@/interface/order.interface";
 
 interface Options {
   scope?: "week" | "history" | "all";
   useSearchParams?: boolean;
+  status?: OrderStatus;
+  hasBoxes?: boolean;
 }
 
 export const useAdminOrdersSummary = (options: Options = {}) => {
@@ -16,7 +20,20 @@ export const useAdminOrdersSummary = (options: Options = {}) => {
   const toDateParam = useSearch ? searchParams.get("toDate") : null;
   const sectorIdParam = useSearch ? searchParams.get("sectorId") : null;
   const preparationDateParam = useSearch ? searchParams.get("preparationDate") : null;
+  const statusParam = useSearch ? searchParams.get("status") : null;
+  const hasBoxesParam = useSearch ? searchParams.get("hasBoxes") : null;
   const scope = options.scope || "all";
+  const status =
+    options.status ??
+    (statusParam === "pending" || statusParam === "completed" || statusParam === "cancelled"
+      ? statusParam
+      : undefined);
+  const hasBoxes =
+    typeof options.hasBoxes === "boolean"
+      ? options.hasBoxes
+      : hasBoxesParam === "true"
+        ? true
+        : undefined;
 
   return useQuery({
     queryKey: [
@@ -29,6 +46,8 @@ export const useAdminOrdersSummary = (options: Options = {}) => {
         toDate: toDateParam || "",
         sectorId: sectorIdParam || "",
         preparationDate: preparationDateParam || "",
+        status: status || "",
+        hasBoxes: hasBoxes ? "true" : "",
       },
     ],
     queryFn: () =>
@@ -40,6 +59,8 @@ export const useAdminOrdersSummary = (options: Options = {}) => {
         toDate: toDateParam || undefined,
         sectorId: sectorIdParam || undefined,
         preparationDate: preparationDateParam || undefined,
+        status,
+        hasBoxes,
       }),
     staleTime: 1000 * 60,
   });

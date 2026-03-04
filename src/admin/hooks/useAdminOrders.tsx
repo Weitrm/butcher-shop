@@ -1,10 +1,19 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
-import { getAdminOrdersAction } from "../actions/get-admin-orders.action";
+
+import {
+  getAdminOrdersWithLocalFiltersAction,
+  type GetAdminOrdersOptions,
+} from "../actions/get-admin-orders.action";
+import type { OrderStatus } from "@/interface/order.interface";
 
 interface Options {
   scope?: "week" | "history" | "all";
   useSearchParams?: boolean;
+  status?: OrderStatus;
+  hasBoxes?: boolean;
+  limit?: number;
+  page?: number;
 }
 
 export const useAdminOrders = (options: Options = {}) => {
@@ -18,13 +27,40 @@ export const useAdminOrders = (options: Options = {}) => {
   const toDateParam = useSearch ? searchParams.get("toDate") : null;
   const sectorIdParam = useSearch ? searchParams.get("sectorId") : null;
   const preparationDateParam = useSearch ? searchParams.get("preparationDate") : null;
+  const statusParam = useSearch ? searchParams.get("status") : null;
+  const hasBoxesParam = useSearch ? searchParams.get("hasBoxes") : null;
 
-  const limit = limitParam ? Number(limitParam) : 10;
-  const page = pageParam ? Number(pageParam) : 1;
+  const limit = options.limit ?? (limitParam ? Number(limitParam) : 10);
+  const page = options.page ?? (pageParam ? Number(pageParam) : 1);
   const safeLimit = isNaN(limit) || limit < 1 ? 10 : limit;
   const safePage = isNaN(page) || page < 1 ? 1 : page;
   const offset = (safePage - 1) * safeLimit;
   const scope = options.scope || "all";
+  const status =
+    options.status ??
+    (statusParam === "pending" || statusParam === "completed" || statusParam === "cancelled"
+      ? statusParam
+      : undefined);
+  const hasBoxes =
+    typeof options.hasBoxes === "boolean"
+      ? options.hasBoxes
+      : hasBoxesParam === "true"
+        ? true
+        : undefined;
+
+  const queryOptions: GetAdminOrdersOptions = {
+    limit: safeLimit,
+    offset,
+    scope,
+    user: userParam || undefined,
+    product: productParam || undefined,
+    fromDate: fromDateParam || undefined,
+    toDate: toDateParam || undefined,
+    sectorId: sectorIdParam || undefined,
+    preparationDate: preparationDateParam || undefined,
+    status,
+    hasBoxes,
+  };
 
   return useQuery({
     queryKey: [
@@ -39,20 +75,11 @@ export const useAdminOrders = (options: Options = {}) => {
         toDate: toDateParam || "",
         sectorId: sectorIdParam || "",
         preparationDate: preparationDateParam || "",
+        status: status || "",
+        hasBoxes: hasBoxes ? "true" : "",
       },
     ],
-    queryFn: () =>
-      getAdminOrdersAction({
-        limit: safeLimit,
-        offset,
-        scope,
-        user: userParam || undefined,
-        product: productParam || undefined,
-        fromDate: fromDateParam || undefined,
-        toDate: toDateParam || undefined,
-        sectorId: sectorIdParam || undefined,
-        preparationDate: preparationDateParam || undefined,
-      }),
+    queryFn: () => getAdminOrdersWithLocalFiltersAction(queryOptions),
     staleTime: 1000 * 60,
   });
 };

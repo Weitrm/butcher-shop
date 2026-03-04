@@ -1,15 +1,12 @@
 import type { Order } from "@/interface/order.interface";
-import { getAdminOrdersAction } from "./get-admin-orders.action";
 
-interface Options {
-  scope?: string;
-  user?: string;
-  product?: string;
-  fromDate?: string;
-  toDate?: string;
-  sectorId?: string;
-  preparationDate?: string;
-}
+import {
+  applyLocalOrderFilters,
+  getAllAdminOrdersAction,
+  type GetAdminOrdersOptions,
+} from "./get-admin-orders.action";
+
+type Options = Omit<GetAdminOrdersOptions, "limit" | "offset">;
 
 export interface AdminOrdersSummary {
   total: number;
@@ -17,8 +14,6 @@ export interface AdminOrdersSummary {
   completed: number;
   cancelled: number;
 }
-
-const SUMMARY_PAGE_SIZE = 100;
 
 const createEmptySummary = (): AdminOrdersSummary => ({
   total: 0,
@@ -40,20 +35,13 @@ export const getAdminOrdersSummaryAction = async (
   options: Options = {},
 ): Promise<AdminOrdersSummary> => {
   const summary = createEmptySummary();
-  let offset = 0;
-  let totalOrders = 0;
+  const orders = await getAllAdminOrdersAction(options);
+  const filteredOrders = applyLocalOrderFilters(orders, {
+    status: options.status,
+    hasBoxes: options.hasBoxes,
+  });
 
-  do {
-    const response = await getAdminOrdersAction({
-      ...options,
-      limit: SUMMARY_PAGE_SIZE,
-      offset,
-    });
-
-    totalOrders = response.count;
-    appendOrdersToSummary(summary, response.orders);
-    offset += SUMMARY_PAGE_SIZE;
-  } while (offset < totalOrders);
+  appendOrdersToSummary(summary, filteredOrders);
 
   return summary;
 };
