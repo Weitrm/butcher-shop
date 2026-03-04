@@ -569,7 +569,7 @@ export const DashboardPage = () => {
                   Productos más pedidos
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Últimos 7 días, ordenados por kg acumulados.
+                  Últimos 7 días.
                 </p>
               </div>
               <div className="relative w-full sm:w-72">

@@ -1,15 +1,12 @@
-import { getAdminOrdersAction } from "./get-admin-orders.action";
 import { getOrderUnits, isOrderPriceAvailable } from "@/lib/order-unit";
 
-interface Options {
-  scope?: string;
-  user?: string;
-  product?: string;
-  fromDate?: string;
-  toDate?: string;
-  sectorId?: string;
-  preparationDate?: string;
-}
+import {
+  applyLocalOrderFilters,
+  getAllAdminOrdersAction,
+  type GetAdminOrdersOptions,
+} from "./get-admin-orders.action";
+
+type Options = Omit<GetAdminOrdersOptions, "limit" | "offset">;
 
 export interface AdminOrdersHistorySummary {
   total: number;
@@ -19,8 +16,6 @@ export interface AdminOrdersHistorySummary {
   completed: number;
   hasBoxOrders: boolean;
 }
-
-const SUMMARY_PAGE_SIZE = 100;
 
 const createEmptySummary = (): AdminOrdersHistorySummary => ({
   total: 0,
@@ -35,30 +30,21 @@ export const getAdminOrdersHistorySummaryAction = async (
   options: Options = {},
 ): Promise<AdminOrdersHistorySummary> => {
   const summary = createEmptySummary();
-  let offset = 0;
-  let totalOrders = 0;
+  const orders = await getAllAdminOrdersAction(options);
+  const filteredOrders = applyLocalOrderFilters(orders, {
+    status: options.status,
+    hasBoxes: options.hasBoxes,
+  });
 
-  do {
-    const response = await getAdminOrdersAction({
-      ...options,
-      limit: SUMMARY_PAGE_SIZE,
-      offset,
-    });
-
-    totalOrders = response.count;
-
-    for (const order of response.orders) {
-      const units = getOrderUnits(order.items);
-      summary.total += 1;
-      summary.totalKg += units.totalKg;
-      summary.totalBoxes += units.totalBoxes;
-      summary.totalPrice += order.totalPrice;
-      if (!isOrderPriceAvailable(order.items)) summary.hasBoxOrders = true;
-      if (order.status === "completed") summary.completed += 1;
-    }
-
-    offset += SUMMARY_PAGE_SIZE;
-  } while (offset < totalOrders);
+  for (const order of filteredOrders) {
+    const units = getOrderUnits(order.items);
+    summary.total += 1;
+    summary.totalKg += units.totalKg;
+    summary.totalBoxes += units.totalBoxes;
+    summary.totalPrice += order.totalPrice;
+    if (!isOrderPriceAvailable(order.items)) summary.hasBoxOrders = true;
+    if (order.status === "completed") summary.completed += 1;
+  }
 
   return summary;
 };

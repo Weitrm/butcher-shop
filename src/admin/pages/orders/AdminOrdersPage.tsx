@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
 import axios from "axios";
@@ -7,7 +7,13 @@ import { toast } from "sonner";
 
 import { updateOrderStatusAction } from "@/admin/actions/update-order-status.action";
 import { AdminTitle } from "@/admin/components/AdminTitle";
-import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
+import { AdminOrderDetailDrawer } from "@/admin/components/orders/AdminOrderDetailDrawer";
+import { AdminOrderItemsList } from "@/admin/components/orders/AdminOrderItemsList";
+import {
+  adminOrderStatusOptionStyles,
+  adminOrderStatusOptions,
+  adminOrderStatusStyles,
+} from "@/admin/components/orders/orderStatusUI";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
 import { useAdminOrdersSummary } from "@/admin/hooks/useAdminOrdersSummary";
 import { useAdminSectors } from "@/admin/hooks/useAdminSectors";
@@ -21,24 +27,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
-
-const statusOptions: Array<{ value: OrderStatus; label: string }> = [
-  { value: "pending", label: "Pendiente" },
-  { value: "completed", label: "Completado" },
-  { value: "cancelled", label: "Cancelado" },
-];
-
-const statusStyles: Record<OrderStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  completed: "bg-green-100 text-green-800 border-green-200",
-  cancelled: "bg-red-100 text-red-800 border-red-200",
-};
-
-const statusOptionStyles: Record<OrderStatus, CSSProperties> = {
-  pending: { backgroundColor: "#FEF3C7", color: "#92400E" },
-  completed: { backgroundColor: "#DCFCE7", color: "#166534" },
-  cancelled: { backgroundColor: "#FEE2E2", color: "#991B1B" },
-};
+import { getSectorTextColor, normalizeSectorColor } from "@/lib/sector-color";
 
 const statusPriority: Record<OrderStatus, number> = {
   pending: 0,
@@ -58,6 +47,73 @@ const formatDate = (value: string) =>
     timeStyle: "short",
   });
 
+const toDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+type OrdersFilterState = {
+  user: string;
+  product: string;
+  sectorId: string;
+  preparationDate: string;
+  status: string;
+  hasBoxes: boolean;
+};
+
+const getOrdersFilterStateKey = (filters: OrdersFilterState) =>
+  JSON.stringify(filters);
+
+const buildOrdersSearchParams = (filters: OrdersFilterState) => {
+  const nextParams = new URLSearchParams();
+
+  if (filters.user) nextParams.set("user", filters.user);
+  if (filters.product) nextParams.set("product", filters.product);
+  if (filters.sectorId) nextParams.set("sectorId", filters.sectorId);
+  if (filters.preparationDate) nextParams.set("preparationDate", filters.preparationDate);
+  if (filters.status && filters.status !== "all") nextParams.set("status", filters.status);
+  if (filters.hasBoxes) nextParams.set("hasBoxes", "true");
+
+  nextParams.set("page", "1");
+  return nextParams;
+};
+
+const filterChipStyles = {
+  user: "border-slate-200 bg-slate-100 text-slate-700",
+  product: "border-blue-200 bg-blue-100 text-blue-800",
+  sector: "border-violet-200 bg-violet-100 text-violet-800",
+  preparationDate: "border-amber-200 bg-amber-100 text-amber-800",
+  hasBoxes: "border-orange-200 bg-orange-100 text-orange-800",
+} as const;
+
+const getStatusFilterChipStyle = (status: string | null) => {
+  if (!status || status === "all") {
+    return "border-slate-200 bg-slate-100 text-slate-700";
+  }
+
+  return (
+    adminOrderStatusStyles[status as OrderStatus] ||
+    "border-slate-200 bg-slate-100 text-slate-700"
+  );
+};
+
+const filterChipBaseClassName = "inline-flex items-center rounded-full border px-2.5 py-1 font-medium";
+
+const getFilterChipClassName = (tone: string) =>
+  `${filterChipBaseClassName} ${tone}`;
+
+const getSectorFilterChipStyle = (color?: string | null): CSSProperties => {
+  const safeColor = normalizeSectorColor(color);
+
+  return {
+    backgroundColor: safeColor,
+    borderColor: safeColor,
+    color: getSectorTextColor(safeColor),
+  };
+};
+
 export const AdminOrdersPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialUser = searchParams.get("user") || "";
@@ -68,15 +124,29 @@ export const AdminOrdersPage = () => {
   const initialHasBoxes = searchParams.get("hasBoxes") === "true";
   const [userQuery, setUserQuery] = useState(initialUser);
   const [productQuery, setProductQuery] = useState(initialProduct);
+  const [debouncedUserQuery, setDebouncedUserQuery] = useState(initialUser.trim());
+  const [debouncedProductQuery, setDebouncedProductQuery] = useState(initialProduct.trim());
   const [sectorId, setSectorId] = useState(initialSectorId);
   const [preparationDate, setPreparationDate] = useState(initialPreparationDate);
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [hasBoxesOnly, setHasBoxesOnly] = useState(initialHasBoxes);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const lastAppliedFiltersRef = useRef(
+    getOrdersFilterStateKey({
+      user: initialUser.trim(),
+      product: initialProduct.trim(),
+      sectorId: initialSectorId,
+      preparationDate: initialPreparationDate,
+      status: initialStatus,
+      hasBoxes: initialHasBoxes,
+    }),
+  );
   const { data: sectors = [] } = useAdminSectors();
-  const { data, isLoading } = useAdminOrders({ scope: "week" });
-  const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersSummary({
-    scope: "week",
-  });
+  const { data, isLoading, isFetching } = useAdminOrders({ scope: "week" });
+  const { data: summaryData, isLoading: isSummaryLoading, isFetching: isSummaryFetching } =
+    useAdminOrdersSummary({
+      scope: "week",
+    });
   const sortedOrders = useMemo(
     () =>
       [...(data?.orders ?? [])].sort((a, b) => {
@@ -92,6 +162,10 @@ export const AdminOrdersPage = () => {
       }),
     [data?.orders],
   );
+  const selectedOrder = useMemo(
+    () => sortedOrders.find((order) => order.id === selectedOrderId) || null,
+    [selectedOrderId, sortedOrders],
+  );
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const hasActiveFilters = Boolean(
@@ -104,6 +178,55 @@ export const AdminOrdersPage = () => {
   );
   const summary = summaryData || { total: 0, pending: 0, completed: 0, cancelled: 0 };
   const selectedSector = sectors.find((sector) => sector.id === sectorId);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedUserQuery(userQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [userQuery]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedProductQuery(productQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [productQuery]);
+
+  useEffect(() => {
+    const filters: OrdersFilterState = {
+      user: debouncedUserQuery,
+      product: debouncedProductQuery,
+      sectorId,
+      preparationDate,
+      status: statusFilter,
+      hasBoxes: hasBoxesOnly,
+    };
+    const nextKey = getOrdersFilterStateKey(filters);
+
+    if (lastAppliedFiltersRef.current === nextKey) {
+      return;
+    }
+
+    lastAppliedFiltersRef.current = nextKey;
+    setSearchParams(buildOrdersSearchParams(filters), { replace: true });
+  }, [
+    debouncedProductQuery,
+    debouncedUserQuery,
+    hasBoxesOnly,
+    preparationDate,
+    sectorId,
+    setSearchParams,
+    statusFilter,
+  ]);
+
+  useEffect(() => {
+    if (selectedOrderId && !selectedOrder) {
+      setSelectedOrderId(null);
+    }
+  }, [selectedOrder, selectedOrderId]);
 
   const statusMutation = useMutation({
     mutationFn: updateOrderStatusAction,
@@ -131,40 +254,73 @@ export const AdminOrdersPage = () => {
     }
   };
 
-  const handleSearch = () => {
-    const nextParams = new URLSearchParams(searchParams);
-    if (userQuery.trim()) nextParams.set("user", userQuery.trim());
-    else nextParams.delete("user");
-    if (productQuery.trim()) nextParams.set("product", productQuery.trim());
-    else nextParams.delete("product");
-    if (sectorId) nextParams.set("sectorId", sectorId);
-    else nextParams.delete("sectorId");
-    if (preparationDate) nextParams.set("preparationDate", preparationDate);
-    else nextParams.delete("preparationDate");
-    if (statusFilter !== "all") nextParams.set("status", statusFilter);
-    else nextParams.delete("status");
-    if (hasBoxesOnly) nextParams.set("hasBoxes", "true");
-    else nextParams.delete("hasBoxes");
-    nextParams.set("page", "1");
-    setSearchParams(nextParams);
-  };
-
   const handleClear = () => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete("user");
-    nextParams.delete("product");
-    nextParams.delete("sectorId");
-    nextParams.delete("preparationDate");
-    nextParams.delete("status");
-    nextParams.delete("hasBoxes");
-    nextParams.set("page", "1");
-    setSearchParams(nextParams);
     setUserQuery("");
     setProductQuery("");
+    setDebouncedUserQuery("");
+    setDebouncedProductQuery("");
     setSectorId("");
     setPreparationDate("");
     setStatusFilter("all");
     setHasBoxesOnly(false);
+  };
+
+  const applyPreset = (preset: "pending" | "boxes" | "today" | "clear") => {
+    if (preset === "clear") {
+      handleClear();
+      return;
+    }
+
+    if (preset === "pending") {
+      setUserQuery("");
+      setProductQuery("");
+      setDebouncedUserQuery("");
+      setDebouncedProductQuery("");
+      setSectorId("");
+      setPreparationDate("");
+      setStatusFilter("pending");
+      setHasBoxesOnly(false);
+    }
+
+    if (preset === "boxes") {
+      setUserQuery("");
+      setProductQuery("");
+      setDebouncedUserQuery("");
+      setDebouncedProductQuery("");
+      setSectorId("");
+      setPreparationDate("");
+      setStatusFilter("all");
+      setHasBoxesOnly(true);
+    }
+
+    if (preset === "today") {
+      const today = toDateInputValue(new Date());
+      setUserQuery("");
+      setProductQuery("");
+      setDebouncedUserQuery("");
+      setDebouncedProductQuery("");
+      setSectorId("");
+      setStatusFilter("all");
+      setHasBoxesOnly(false);
+      setPreparationDate(today);
+    }
+  };
+
+  const removeFilter = (
+    filter: "user" | "product" | "sectorId" | "preparationDate" | "status" | "hasBoxes",
+  ) => {
+    if (filter === "user") {
+      setUserQuery("");
+      setDebouncedUserQuery("");
+    }
+    if (filter === "product") {
+      setProductQuery("");
+      setDebouncedProductQuery("");
+    }
+    if (filter === "sectorId") setSectorId("");
+    if (filter === "preparationDate") setPreparationDate("");
+    if (filter === "status") setStatusFilter("all");
+    if (filter === "hasBoxes") setHasBoxesOnly(false);
   };
 
   if (isLoading) {
@@ -173,13 +329,13 @@ export const AdminOrdersPage = () => {
 
   return (
     <>
-      <AdminTitle title="Ordenes" subtitle="Pedidos de la semana" />
+      <AdminTitle title="Ordenes" subtitle="Vista semanal de pedidos" />
 
       <Card className="mb-6 border-slate-200 shadow-sm">
         <CardContent className="space-y-4 bg-gradient-to-r from-white via-slate-50 to-white p-6">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <div>
-              <label className="text-sm font-medium text-gray-700">Buscar por cliente</label>
+              <label className="text-sm font-medium text-gray-700">Buscar cliente</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -191,7 +347,7 @@ export const AdminOrdersPage = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Buscar por producto</label>
+              <label className="text-sm font-medium text-gray-700">Buscar producto</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -242,7 +398,7 @@ export const AdminOrdersPage = () => {
                 className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="all">Todos</option>
-                {statusOptions.map((status) => (
+                {adminOrderStatusOptions.map((status) => (
                   <option key={status.value} value={status.value}>
                     {status.label}
                   </option>
@@ -263,7 +419,26 @@ export const AdminOrdersPage = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleSearch}>Buscar</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset("pending")}>
+              Pendientes
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset("boxes")}>
+              Con cajas
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset("today")}>
+              Hoy
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => applyPreset("clear")}>
+              Sin filtros
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">
+              {isFetching || isSummaryFetching
+                ? "Actualizando resultados..."
+                : "Los filtros se aplican automaticamente."}
+            </p>
             <Button variant="outline" onClick={handleClear}>
               <X className="h-4 w-4" />
               Limpiar
@@ -272,16 +447,61 @@ export const AdminOrdersPage = () => {
 
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span>Filtros activos aplicados sobre los pedidos de la semana:</span>
-              {statusFilter !== "all" && (
-                <span className="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
-                  Estado: {statusOptions.find((item) => item.value === statusFilter)?.label}
-                </span>
+              <span>Filtros activos en la vista semanal:</span>
+              {searchParams.get("user") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("user")}
+                  className={getFilterChipClassName(filterChipStyles.user)}
+                >
+                  Cliente: {searchParams.get("user")} x
+                </button>
               )}
-              {hasBoxesOnly && (
-                <span className="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
-                  Con cajas
-                </span>
+              {searchParams.get("product") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("product")}
+                  className={getFilterChipClassName(filterChipStyles.product)}
+                >
+                  Producto: {searchParams.get("product")} x
+                </button>
+              )}
+              {searchParams.get("sectorId") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("sectorId")}
+                  className={filterChipBaseClassName}
+                  style={getSectorFilterChipStyle(selectedSector?.color)}
+                >
+                  Sector: {selectedSector?.title || "Seleccionado"} x
+                </button>
+              )}
+              {searchParams.get("preparationDate") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("preparationDate")}
+                  className={getFilterChipClassName(filterChipStyles.preparationDate)}
+                >
+                  Preparacion: {searchParams.get("preparationDate")} x
+                </button>
+              )}
+              {searchParams.get("status") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("status")}
+                  className={getFilterChipClassName(getStatusFilterChipStyle(searchParams.get("status")))}
+                >
+                  Estado: {adminOrderStatusOptions.find((item) => item.value === searchParams.get("status"))?.label} x
+                </button>
+              )}
+              {searchParams.get("hasBoxes") === "true" && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("hasBoxes")}
+                  className={getFilterChipClassName(filterChipStyles.hasBoxes)}
+                >
+                  Con cajas x
+                </button>
               )}
             </div>
           )}
@@ -290,7 +510,7 @@ export const AdminOrdersPage = () => {
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-xs">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Total</p>
+            <p className="text-xs uppercase tracking-wide text-gray-500">Total</p>
           <p className="text-2xl font-semibold text-gray-900">
             {isSummaryLoading && !summaryData ? "-" : summary.total}
           </p>
@@ -321,10 +541,10 @@ export const AdminOrdersPage = () => {
             <TableHead>Pedido</TableHead>
             <TableHead>Cliente</TableHead>
             <TableHead>Sector</TableHead>
-            <TableHead className="w-[320px]">Detalle</TableHead>
+            <TableHead className="w-[360px]">Items</TableHead>
             <TableHead>Unidades</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Fecha</TableHead>
+            <TableHead>Creado</TableHead>
             <TableHead>Preparacion</TableHead>
             <TableHead className="text-right">Estado</TableHead>
           </TableRow>
@@ -333,13 +553,29 @@ export const AdminOrdersPage = () => {
           {sortedOrders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="text-center text-sm text-gray-500">
-                No hay pedidos registrados.
+                    No hay pedidos en esta vista.
               </TableCell>
             </TableRow>
           ) : (
             sortedOrders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>#{order.id.slice(0, 8)}</TableCell>
+              <TableRow
+                key={order.id}
+                className={selectedOrderId === order.id ? "bg-sky-50/60" : undefined}
+              >
+                <TableCell>
+                  <div className="flex flex-col gap-2">
+                    <span className="font-semibold text-slate-900">#{order.id.slice(0, 8)}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto justify-start px-0 text-xs text-slate-600"
+                      onClick={() => setSelectedOrderId(order.id)}
+                    >
+                      Ver detalle
+                    </Button>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">{order.user?.fullName || "Sin nombre"}</span>
@@ -367,7 +603,12 @@ export const AdminOrdersPage = () => {
                   />
                 </TableCell>
                 <TableCell className="whitespace-normal">
-                  <OrderItemsSummaryCell items={order.items} />
+                  <AdminOrderItemsList
+                    items={order.items}
+                    compact
+                    maxVisibleItems={2}
+                    onViewMore={() => setSelectedOrderId(order.id)}
+                  />
                 </TableCell>
                 <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
                 <TableCell>
@@ -384,13 +625,13 @@ export const AdminOrdersPage = () => {
                       handleStatusChange(order.id, event.target.value as OrderStatus)
                     }
                     disabled={updatingOrderId === order.id}
-                    className={`h-9 rounded-md border px-3 text-sm font-medium ${statusStyles[order.status]}`}
+                    className={`h-9 rounded-md border px-3 text-sm font-medium ${adminOrderStatusStyles[order.status]}`}
                   >
-                    {statusOptions.map((status) => (
+                    {adminOrderStatusOptions.map((status) => (
                       <option
                         key={status.value}
                         value={status.value}
-                        style={statusOptionStyles[status.value]}
+                        style={adminOrderStatusOptionStyles[status.value]}
                       >
                         {status.label}
                       </option>
@@ -403,6 +644,18 @@ export const AdminOrdersPage = () => {
         </TableBody>
       </Table>
       <CustomPagination totalPages={data?.pages || 0} />
+
+      <AdminOrderDetailDrawer
+        order={selectedOrder}
+        open={Boolean(selectedOrder)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedOrderId(null);
+          }
+        }}
+        onStatusChange={handleStatusChange}
+        isUpdating={Boolean(selectedOrder && updatingOrderId === selectedOrder.id)}
+      />
     </>
   );
 };

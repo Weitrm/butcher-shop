@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
 
@@ -14,8 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
+import { getSectorTextColor, normalizeSectorColor } from "@/lib/sector-color";
 
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -28,6 +30,12 @@ const statusStyles: Record<string, string> = {
   completed: "border-emerald-200 bg-emerald-100 text-emerald-800",
   cancelled: "border-rose-200 bg-rose-100 text-rose-800",
 };
+
+const statusOptions: Array<{ value: OrderStatus; label: string }> = [
+  { value: "pending", label: "Pendiente" },
+  { value: "completed", label: "Completado" },
+  { value: "cancelled", label: "Cancelado" },
+];
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("es-AR", {
@@ -42,6 +50,38 @@ const toDateInputValue = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const filterChipStyles = {
+  user: "border-slate-200 bg-slate-100 text-slate-700",
+  product: "border-blue-200 bg-blue-100 text-blue-800",
+  fromDate: "border-amber-200 bg-amber-100 text-amber-800",
+  toDate: "border-amber-200 bg-amber-100 text-amber-800",
+  sector: "border-violet-200 bg-violet-100 text-violet-800",
+  hasBoxes: "border-orange-200 bg-orange-100 text-orange-800",
+} as const;
+
+const getStatusFilterChipStyle = (status: string | null) => {
+  if (!status || status === "all") {
+    return "border-slate-200 bg-slate-100 text-slate-700";
+  }
+
+  return statusStyles[status] || "border-slate-200 bg-slate-100 text-slate-700";
+};
+
+const filterChipBaseClassName = "inline-flex items-center rounded-full border px-2.5 py-1 font-medium";
+
+const getFilterChipClassName = (tone: string) =>
+  `${filterChipBaseClassName} ${tone}`;
+
+const getSectorFilterChipStyle = (color?: string | null): CSSProperties => {
+  const safeColor = normalizeSectorColor(color);
+
+  return {
+    backgroundColor: safeColor,
+    borderColor: safeColor,
+    color: getSectorTextColor(safeColor),
+  };
+};
+
 export const AdminOrdersHistoryPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialUser = searchParams.get("user") || "";
@@ -49,11 +89,15 @@ export const AdminOrdersHistoryPage = () => {
   const initialFromDate = searchParams.get("fromDate") || "";
   const initialToDate = searchParams.get("toDate") || "";
   const initialSectorId = searchParams.get("sectorId") || "";
+  const initialStatus = searchParams.get("status") || "all";
+  const initialHasBoxes = searchParams.get("hasBoxes") === "true";
   const [userQuery, setUserQuery] = useState(initialUser);
   const [productQuery, setProductQuery] = useState(initialProduct);
   const [fromDate, setFromDate] = useState(initialFromDate);
   const [toDate, setToDate] = useState(initialToDate);
   const [sectorId, setSectorId] = useState(initialSectorId);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [hasBoxesOnly, setHasBoxesOnly] = useState(initialHasBoxes);
   const { data: sectors = [] } = useAdminSectors();
   const { data, isLoading } = useAdminOrders({ scope: "history" });
   const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersHistorySummary({
@@ -66,7 +110,9 @@ export const AdminOrdersHistoryPage = () => {
       searchParams.get("product") ||
       searchParams.get("fromDate") ||
       searchParams.get("toDate") ||
-      searchParams.get("sectorId"),
+      searchParams.get("sectorId") ||
+      searchParams.get("status") ||
+      searchParams.get("hasBoxes"),
   );
   const summary = summaryData || {
     total: 0,
@@ -92,6 +138,10 @@ export const AdminOrdersHistoryPage = () => {
     else nextParams.delete("toDate");
     if (sectorId) nextParams.set("sectorId", sectorId);
     else nextParams.delete("sectorId");
+    if (statusFilter !== "all") nextParams.set("status", statusFilter);
+    else nextParams.delete("status");
+    if (hasBoxesOnly) nextParams.set("hasBoxes", "true");
+    else nextParams.delete("hasBoxes");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
   };
@@ -103,6 +153,8 @@ export const AdminOrdersHistoryPage = () => {
     nextParams.delete("fromDate");
     nextParams.delete("toDate");
     nextParams.delete("sectorId");
+    nextParams.delete("status");
+    nextParams.delete("hasBoxes");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
     setUserQuery("");
@@ -110,6 +162,8 @@ export const AdminOrdersHistoryPage = () => {
     setFromDate("");
     setToDate("");
     setSectorId("");
+    setStatusFilter("all");
+    setHasBoxesOnly(false);
   };
 
   const handleQuickRange = (days: number) => {
@@ -125,8 +179,27 @@ export const AdminOrdersHistoryPage = () => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("fromDate", from);
     nextParams.set("toDate", to);
+    if (statusFilter !== "all") nextParams.set("status", statusFilter);
+    else nextParams.delete("status");
+    if (hasBoxesOnly) nextParams.set("hasBoxes", "true");
+    else nextParams.delete("hasBoxes");
     nextParams.set("page", "1");
     setSearchParams(nextParams);
+  };
+
+  const removeFilter = (filter: "user" | "product" | "fromDate" | "toDate" | "sectorId" | "status" | "hasBoxes") => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete(filter);
+    nextParams.set("page", "1");
+    setSearchParams(nextParams);
+
+    if (filter === "user") setUserQuery("");
+    if (filter === "product") setProductQuery("");
+    if (filter === "fromDate") setFromDate("");
+    if (filter === "toDate") setToDate("");
+    if (filter === "sectorId") setSectorId("");
+    if (filter === "status") setStatusFilter("all");
+    if (filter === "hasBoxes") setHasBoxesOnly(false);
   };
 
   if (isLoading) {
@@ -135,13 +208,13 @@ export const AdminOrdersHistoryPage = () => {
 
   return (
     <>
-      <AdminTitle title="Historial" subtitle="Pedidos anteriores a la semana con filtros" />
+      <AdminTitle title="Historial" subtitle="Consulta de pedidos anteriores con filtros" />
 
       <Card className="mb-6 border-slate-200 shadow-sm">
         <CardContent className="space-y-4 bg-gradient-to-r from-white via-slate-50 to-white p-6">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
             <div>
-              <label className="text-sm font-medium text-gray-700">Buscar por cliente</label>
+              <label className="text-sm font-medium text-gray-700">Buscar cliente</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -153,7 +226,7 @@ export const AdminOrdersHistoryPage = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Buscar por producto</label>
+              <label className="text-sm font-medium text-gray-700">Buscar producto</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -208,6 +281,32 @@ export const AdminOrdersHistoryPage = () => {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Estado</label>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="all">Todos</option>
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={hasBoxesOnly}
+                onChange={(event) => setHasBoxesOnly(event.target.checked)}
+              />
+              Solo pedidos con cajas
+            </label>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -215,13 +314,13 @@ export const AdminOrdersHistoryPage = () => {
               Buscar
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleQuickRange(30)}>
-              Ultimos 30 dias
+              30 dias
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleQuickRange(90)}>
-              Ultimos 90 dias
+              90 dias
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleQuickRange(180)}>
-              Ultimos 180 dias
+              180 dias
             </Button>
             <Button variant="outline" onClick={handleClear}>
               <X className="h-4 w-4" />
@@ -236,7 +335,73 @@ export const AdminOrdersHistoryPage = () => {
           )}
 
           {hasActiveFilters && (
-            <p className="text-xs text-slate-500">Filtros activos aplicados sobre el historial.</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span>Filtros activos en el historial:</span>
+              {searchParams.get("user") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("user")}
+                  className={getFilterChipClassName(filterChipStyles.user)}
+                >
+                  Cliente: {searchParams.get("user")} x
+                </button>
+              )}
+              {searchParams.get("product") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("product")}
+                  className={getFilterChipClassName(filterChipStyles.product)}
+                >
+                  Producto: {searchParams.get("product")} x
+                </button>
+              )}
+              {searchParams.get("fromDate") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("fromDate")}
+                  className={getFilterChipClassName(filterChipStyles.fromDate)}
+                >
+                  Desde: {searchParams.get("fromDate")} x
+                </button>
+              )}
+              {searchParams.get("toDate") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("toDate")}
+                  className={getFilterChipClassName(filterChipStyles.toDate)}
+                >
+                  Hasta: {searchParams.get("toDate")} x
+                </button>
+              )}
+              {searchParams.get("sectorId") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("sectorId")}
+                  className={filterChipBaseClassName}
+                  style={getSectorFilterChipStyle(selectedSector?.color)}
+                >
+                  Sector: {selectedSector?.title || "Seleccionado"} x
+                </button>
+              )}
+              {searchParams.get("status") && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("status")}
+                  className={getFilterChipClassName(getStatusFilterChipStyle(searchParams.get("status")))}
+                >
+                  Estado: {statusOptions.find((item) => item.value === searchParams.get("status"))?.label} x
+                </button>
+              )}
+              {searchParams.get("hasBoxes") === "true" && (
+                <button
+                  type="button"
+                  onClick={() => removeFilter("hasBoxes")}
+                  className={getFilterChipClassName(filterChipStyles.hasBoxes)}
+                >
+                  Con cajas x
+                </button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -252,7 +417,7 @@ export const AdminOrdersHistoryPage = () => {
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Total pedidos</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Volumen</p>
             <p className="text-xl font-semibold text-slate-900">
               {isSummaryLoading && !summaryData
                 ? "-"
@@ -262,7 +427,7 @@ export const AdminOrdersHistoryPage = () => {
         </Card>
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Total vendido</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Importe</p>
             <p className="text-xl font-semibold text-slate-900">
               {isSummaryLoading && !summaryData
                 ? "-"
@@ -293,7 +458,7 @@ export const AdminOrdersHistoryPage = () => {
                 <TableHead className="w-[320px]">Detalle</TableHead>
                 <TableHead>Unidades</TableHead>
                 <TableHead>Total</TableHead>
-                <TableHead>Fecha</TableHead>
+                <TableHead>Creado</TableHead>
                 <TableHead>Preparacion</TableHead>
                 <TableHead>Estado</TableHead>
               </TableRow>
@@ -303,7 +468,7 @@ export const AdminOrdersHistoryPage = () => {
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-sm text-gray-500">
                     {hasActiveFilters
-                      ? "No hay pedidos para el filtro seleccionado."
+                      ? "No hay pedidos para el filtro actual."
                       : "No hay pedidos en el historial."}
                   </TableCell>
                 </TableRow>
