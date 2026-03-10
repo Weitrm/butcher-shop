@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react"
 import { Outlet } from "react-router"
 
 import { useAuthStore } from "@/auth/store/auth.store"
+import { hasSuperUserRole } from "@/lib/user-roles"
 import { useCartStore } from "@/shop/store/cart.store"
 import { CustomFooter } from "../components/CustomFooter"
 import { CustomHeader } from "../components/CustomHeader"
@@ -22,11 +23,7 @@ export const ShopLayout = () => {
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false
 
-  const isSuperUser = Boolean(
-    user?.isSuperUser ||
-      user?.roles?.includes("super-user") ||
-      user?.roles?.includes("super"),
-  )
+  const isSuperUser = hasSuperUserRole(user)
 
   useEffect(() => {
     if (authStatus !== "authenticated" || !user || isSuperUser) {

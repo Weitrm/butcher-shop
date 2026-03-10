@@ -22,6 +22,7 @@ import {
   getEffectiveWeeklyOrderLimit,
   getStartOfWeekSunday,
 } from "@/lib/weekly-order-limit";
+import { hasSuperUserRole } from "@/lib/user-roles";
 import { createOrderAction } from "@/shop/actions/create-order.action";
 import { CustomJumbotron } from "@/shop/components/CustomJumbotron";
 import { useOrders } from "@/shop/hooks/useOrders";
@@ -126,11 +127,7 @@ export const OrderPage = () => {
   const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
-  const isSuperUser = Boolean(
-    user?.isSuperUser ||
-      user?.roles?.includes("super-user") ||
-      user?.roles?.includes("super"),
-  );
+  const isSuperUser = hasSuperUserRole(user);
 
   const startOfWeek = useMemo(() => getStartOfWeekSunday(), []);
   const startOfWeekDate = useMemo(() => startOfWeek.toISOString().slice(0, 10), [startOfWeek]);

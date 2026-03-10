@@ -14,6 +14,7 @@ import { useAdminSectors } from "@/admin/hooks/useAdminSectors";
 import { useAdminUsers } from "@/admin/hooks/useAdminUsers";
 import { registerAction } from "@/auth/actions/register.action";
 import { useAuthStore } from "@/auth/store/auth.store";
+import { hasSuperUserRole } from "@/lib/user-roles";
 
 import { toastAxiosError } from "../utils/toastAxiosError";
 import { validateCreateUser, validatePassword } from "../utils/userValidators";
@@ -63,10 +64,7 @@ export const useAdminUsersController = () => {
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       if (roleFilter !== "all") {
-        const hasSuperRole =
-          user.isSuperUser ||
-          (user.roles || []).includes("super-user") ||
-          (user.roles || []).includes("super");
+        const hasSuperRole = hasSuperUserRole(user);
         if (roleFilter === "super-user" && !hasSuperRole) return false;
         if (roleFilter !== "super-user" && !(user.roles || []).includes(roleFilter)) {
           return false;

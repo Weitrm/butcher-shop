@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/shop/store/cart.store";
 import { useAuthStore } from "@/auth/store/auth.store";
+import { hasSuperUserRole } from "@/lib/user-roles";
 
 interface ProductCardProps {
   id: string;
@@ -36,11 +37,7 @@ export const ProductCard = ({
   const authStatus = useAuthStore((state) => state.authStatus);
   const isOrderingDisabled =
     authStatus === "authenticated" && !!user && user.isActive === false;
-  const isSuperUser = Boolean(
-    user?.isSuperUser ||
-      user?.roles?.includes("super-user") ||
-      user?.roles?.includes("super"),
-  );
+  const isSuperUser = hasSuperUserRole(user);
   const kgLimit = isSuperUser
     ? SUPER_MAX_KG
     : Math.max(1, Math.floor(Number(maxKgPerOrder || 1)));

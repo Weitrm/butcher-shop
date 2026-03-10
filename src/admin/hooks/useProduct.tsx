@@ -24,7 +24,7 @@ export const useProduct = (id: string) => {
             queryClient.invalidateQueries({queryKey: ['product', {id: product.id}]});
 
             // Actualizar queryData
-            queryClient.setQueryData(['products', {id: product.id}], product);
+            queryClient.setQueryData(['product', {id: product.id}], product);
         }
 
     })
@@ -38,7 +38,7 @@ export const useProduct = (id: string) => {
             queryClient.invalidateQueries({queryKey: ['product', {id: product.id}]});
 
             // Actualizar queryData
-            queryClient.setQueryData(['products', {id: product.id}], product);
+            queryClient.setQueryData(['product', {id: product.id}], product);
         }
     })
 

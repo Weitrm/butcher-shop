@@ -4,6 +4,7 @@ import { SectorBadge } from "@/components/custom/SectorBadge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { User } from "@/interface/user.interface";
+import { hasSuperUserRole } from "@/lib/user-roles";
 
 import { UserStatusBadge } from "./UserStatusBadge";
 
@@ -15,10 +16,7 @@ type UserRowProps = {
 
 // Fila individual de usuario con disparador de acciones.
 export const UserRow = ({ user, isMenuOpen, onOpenActions }: UserRowProps) => {
-  const hasSuperRole =
-    user.isSuperUser ||
-    (user.roles || []).includes("super-user") ||
-    (user.roles || []).includes("super");
+  const hasSuperRole = hasSuperUserRole(user);
   const normalizedRoles = new Set(user.roles || []);
   if (hasSuperRole) {
     normalizedRoles.add("super-user");

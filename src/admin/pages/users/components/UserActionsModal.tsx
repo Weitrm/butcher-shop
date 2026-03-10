@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Sector } from "@/interface/sector.interface";
 import type { User } from "@/interface/user.interface";
+import { hasAdminRole, hasSuperUserRole } from "@/lib/user-roles";
 import {
   formatWeeklyOrdersLabel,
   getBaseWeeklyOrderLimit,
@@ -82,11 +83,8 @@ export const UserActionsModal = ({
     return () => document.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  const hasSuperRole =
-    user.isSuperUser ||
-    (user.roles || []).includes("super-user") ||
-    (user.roles || []).includes("super");
-  const hasAdminRole = (user.roles || []).includes("admin");
+  const hasSuperRole = hasSuperUserRole(user);
+  const isAdmin = hasAdminRole(user);
   const selectedSector =
     sectors.find((sector) => sector.id === selectedSectorId) ||
     (user.sectorId ? sectors.find((sector) => sector.id === user.sectorId) : undefined);
@@ -135,7 +133,7 @@ export const UserActionsModal = ({
             <Shield className="h-4 w-4" />
             {isUpdatingAdmin
               ? "Actualizando..."
-              : hasAdminRole
+              : isAdmin
               ? "Quitar admin"
               : "Hacer admin"}
           </Button>
@@ -256,7 +254,7 @@ export const UserActionsModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`password-${user.id}`}>Nueva contrasena</Label>
+            <Label htmlFor={`password-${user.id}`}>Nueva contraseña</Label>
             <Input
               id={`password-${user.id}`}
               type="password"
@@ -272,7 +270,7 @@ export const UserActionsModal = ({
               onClick={onUpdatePassword}
             >
               <KeyRound className="h-4 w-4" />
-              {isUpdatingPassword ? "Actualizando..." : "Actualizar contrasena"}
+              {isUpdatingPassword ? "Actualizando..." : "Actualizar contraseña"}
             </Button>
           </div>
 

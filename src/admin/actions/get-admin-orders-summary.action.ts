@@ -1,10 +1,6 @@
-import type { Order } from "@/interface/order.interface";
+import { butcherApi } from "@/api/butcherApi";
 
-import {
-  applyLocalOrderFilters,
-  getAllAdminOrdersAction,
-  type GetAdminOrdersOptions,
-} from "./get-admin-orders.action";
+import { type GetAdminOrdersOptions } from "./get-admin-orders.action";
 
 type Options = Omit<GetAdminOrdersOptions, "limit" | "offset">;
 
@@ -15,33 +11,22 @@ export interface AdminOrdersSummary {
   cancelled: number;
 }
 
-const createEmptySummary = (): AdminOrdersSummary => ({
-  total: 0,
-  pending: 0,
-  completed: 0,
-  cancelled: 0,
-});
-
-const appendOrdersToSummary = (summary: AdminOrdersSummary, orders: Order[]) => {
-  for (const order of orders) {
-    summary.total += 1;
-    if (order.status === "pending") summary.pending += 1;
-    if (order.status === "completed") summary.completed += 1;
-    if (order.status === "cancelled") summary.cancelled += 1;
-  }
-};
-
 export const getAdminOrdersSummaryAction = async (
   options: Options = {},
 ): Promise<AdminOrdersSummary> => {
-  const summary = createEmptySummary();
-  const orders = await getAllAdminOrdersAction(options);
-  const filteredOrders = applyLocalOrderFilters(orders, {
-    status: options.status,
-    hasBoxes: options.hasBoxes,
+  const { data } = await butcherApi.get<AdminOrdersSummary>("/orders/admin/summary", {
+    params: {
+      scope: options.scope,
+      user: options.user,
+      product: options.product,
+      fromDate: options.fromDate,
+      toDate: options.toDate,
+      sectorId: options.sectorId,
+      preparationDate: options.preparationDate,
+      status: options.status,
+      hasBoxes: typeof options.hasBoxes === "boolean" ? options.hasBoxes : undefined,
+    },
   });
 
-  appendOrdersToSummary(summary, filteredOrders);
-
-  return summary;
+  return data;
 };

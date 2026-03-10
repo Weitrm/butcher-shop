@@ -7,6 +7,7 @@ import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { hasAdminRole, hasSuperUserRole } from "@/lib/user-roles";
 
 import { CreateUserFormCard } from "./components/CreateUserFormCard";
 import { CreateUserToggle } from "./components/CreateUserToggle";
@@ -185,16 +186,12 @@ export const AdminUsersPage = () => {
           }
           onToggleStatus={() => handleToggleStatus(selectedUser.id, !selectedUser.isActive)}
           onToggleAdmin={() =>
-            handleToggleAdmin(selectedUser.id, !(selectedUser.roles || []).includes("admin"))
+            handleToggleAdmin(selectedUser.id, !hasAdminRole(selectedUser))
           }
           onToggleSuperUser={() =>
             handleToggleSuperUser(
               selectedUser.id,
-              !(
-                selectedUser.isSuperUser ||
-                (selectedUser.roles || []).includes("super-user") ||
-                (selectedUser.roles || []).includes("super")
-              ),
+              !hasSuperUserRole(selectedUser),
             )
           }
           onUpdateSector={() => handleUpdateSector(selectedUser.id)}

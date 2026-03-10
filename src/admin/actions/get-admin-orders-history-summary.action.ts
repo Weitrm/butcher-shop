@@ -1,10 +1,6 @@
-import { getOrderUnits, isOrderPriceAvailable } from "@/lib/order-unit";
+import { butcherApi } from "@/api/butcherApi";
 
-import {
-  applyLocalOrderFilters,
-  getAllAdminOrdersAction,
-  type GetAdminOrdersOptions,
-} from "./get-admin-orders.action";
+import { type GetAdminOrdersOptions } from "./get-admin-orders.action";
 
 type Options = Omit<GetAdminOrdersOptions, "limit" | "offset">;
 
@@ -17,34 +13,25 @@ export interface AdminOrdersHistorySummary {
   hasBoxOrders: boolean;
 }
 
-const createEmptySummary = (): AdminOrdersHistorySummary => ({
-  total: 0,
-  totalKg: 0,
-  totalBoxes: 0,
-  totalPrice: 0,
-  completed: 0,
-  hasBoxOrders: false,
-});
-
 export const getAdminOrdersHistorySummaryAction = async (
   options: Options = {},
 ): Promise<AdminOrdersHistorySummary> => {
-  const summary = createEmptySummary();
-  const orders = await getAllAdminOrdersAction(options);
-  const filteredOrders = applyLocalOrderFilters(orders, {
-    status: options.status,
-    hasBoxes: options.hasBoxes,
-  });
+  const { data } = await butcherApi.get<AdminOrdersHistorySummary>(
+    "/orders/admin/history-summary",
+    {
+      params: {
+        scope: options.scope,
+        user: options.user,
+        product: options.product,
+        fromDate: options.fromDate,
+        toDate: options.toDate,
+        sectorId: options.sectorId,
+        preparationDate: options.preparationDate,
+        status: options.status,
+        hasBoxes: typeof options.hasBoxes === "boolean" ? options.hasBoxes : undefined,
+      },
+    },
+  );
 
-  for (const order of filteredOrders) {
-    const units = getOrderUnits(order.items);
-    summary.total += 1;
-    summary.totalKg += units.totalKg;
-    summary.totalBoxes += units.totalBoxes;
-    summary.totalPrice += order.totalPrice;
-    if (!isOrderPriceAvailable(order.items)) summary.hasBoxOrders = true;
-    if (order.status === "completed") summary.completed += 1;
-  }
-
-  return summary;
+  return data;
 };
