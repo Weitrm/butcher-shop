@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilIcon, PlusIcon, Search, Trash2Icon, X } from "lucide-react";
@@ -40,17 +41,29 @@ export const AdminProductsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       toast.success("Producto eliminado con éxito");
     },
-    onError: (error) => {
-      console.error("Error al eliminar producto", error);
-      toast.error("Error al eliminar producto");
-    },
   });
 
   const handleDelete = async (productId: string) => {
     const confirmDelete = window.confirm("¿Seguro que quieres eliminar este producto?");
     if (!confirmDelete) return;
 
-    await deleteMutation.mutateAsync(productId);
+    try {
+      await deleteMutation.mutateAsync(productId);
+    } catch (error) {
+      console.error("Error al eliminar producto", error);
+
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+        const normalizedMessage = Array.isArray(message) ? message.join(", ") : message;
+        toast.error(
+          normalizedMessage ||
+            "No se pudo eliminar el producto. Si tiene pedidos asociados, desactivalo.",
+        );
+        return;
+      }
+
+      toast.error("Error al eliminar producto");
+    }
   };
 
   const handleSearch = () => {

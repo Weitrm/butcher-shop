@@ -1,4 +1,4 @@
-﻿import { useNavigate } from "react-router"
+import { useNavigate } from "react-router"
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 
@@ -22,7 +22,7 @@ export const LoginPage = () => {
     const formData = new FormData(event.target as HTMLFormElement);
     const employeeNumber = formData.get('employeeNumber') as string;
     const password = formData.get('password') as string;
-    
+
     const isValid = await login(employeeNumber, password);
 
     if (isValid) {
@@ -56,6 +56,7 @@ export const LoginPage = () => {
                   id="employeeNumber"
                   type="text"
                   name="employeeNumber"
+                  inputMode="numeric"
                   placeholder="Ej: 1024"
                   required
                 />
@@ -64,7 +65,14 @@ export const LoginPage = () => {
                 <div className="flex items-center">
                   <Label htmlFor="password">Contraseña</Label>
                 </div>
-                <Input id="password" type="password" name="password" required placeholder="Contraseña" />
+                <Input
+                  id="password"
+                  type="password"
+                  name="password"
+                  inputMode="numeric"
+                  required
+                  placeholder="Contraseña"
+                />
               </div>
               <Button type="submit" className="w-full" disabled={isPosting}>
                 Ingresar
