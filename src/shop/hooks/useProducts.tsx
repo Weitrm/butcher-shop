@@ -23,6 +23,9 @@ export const useProducts = () => {
         query,
         authenticated: isAuthenticated,
       }),
-    staleTime: 1000 * 60 * 5,
+    staleTime: isAuthenticated ? 1000 * 30 : 1000 * 60 * 5,
+    refetchOnMount: isAuthenticated ? "always" : true,
+    refetchOnWindowFocus: isAuthenticated,
+    refetchInterval: isAuthenticated ? 1000 * 60 : false,
   });
 };

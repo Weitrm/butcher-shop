@@ -5,6 +5,7 @@ import { AdminTitle } from "@/admin/components/AdminTitle";
 import { useForm } from "react-hook-form";
 
 import type { Product } from "@/interface/product.interface";
+import type { Sector } from "@/interface/sector.interface";
 
 import { Button } from "@/components/ui/button";
 import { SaveAll, Upload, X } from "lucide-react";
@@ -15,6 +16,7 @@ interface Props {
     title: string;
     subTitle: string;
     product: Product;
+    sectors: Sector[];
     isPending: boolean;
 
     //Methods
@@ -27,7 +29,7 @@ interface FormInputs extends Product {
 
 }
 
-export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDeleteImage}: Props) => {
+export const ProductForm = ({title, subTitle, product, sectors, onSubmit, isPending, onDeleteImage}: Props) => {
 
     const [dragActive, setDragActive] = useState(false);
     // useForm hook
@@ -42,11 +44,160 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
         setFiles([]);
         setImages(product.images || []);
         setValue('images', product.images || []);
-    }, [product])
+    }, [product, setValue])
 
     const currentStock = watch('stock');
     const isActive = watch('isActive') ?? true;
     const allowBoxes = watch('allowBoxes') ?? false;
+    const allowAllSectors = watch('allowAllSectors') ?? true;
+    const selectedSectorIds = watch('allowedSectorIds') || [];
+    const isEditing = product.id !== "new";
+
+    const statusCard = (
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+        <h2 className="text-xl font-semibold text-slate-800 mb-6">
+            Estado del producto
+        </h2>
+
+        <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm font-medium text-slate-700">
+                Estado
+            </span>
+            <span className={cn(
+                "px-2 py-1 text-xs font-medium rounded-full",
+                isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            )}>
+                {isActive ? 'Activo' : 'Inactivo'}
+            </span>
+            </div>
+
+            <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <span className="text-sm font-medium text-slate-700">
+                    Habilitado para venta
+                </span>
+                <input
+                    type="checkbox"
+                    {...register('isActive')}
+                    className="h-4 w-4"
+                />
+            </label>
+
+            <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <span className="text-sm font-medium text-slate-700">
+                    Permitir pedidos por caja
+                </span>
+                <input
+                    type="checkbox"
+                    {...register('allowBoxes')}
+                    className="h-4 w-4"
+                />
+            </label>
+
+            <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <span className="text-sm font-medium text-slate-700">
+                    Visible para todos los sectores
+                </span>
+                <input
+                    type="checkbox"
+                    {...register('allowAllSectors', {
+                        onChange: (event) => {
+                            if (event.target.checked) {
+                                setValue('allowedSectorIds', []);
+                            }
+                        },
+                    })}
+                    className="h-4 w-4"
+                />
+            </label>
+
+            <div className="rounded-lg border border-slate-200 p-3">
+                <p className="mb-2 text-sm font-medium text-slate-700">
+                    Sectores habilitados
+                </p>
+                <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                    {sectors.map((sector) => (
+                        <label
+                            key={sector.id}
+                            className={cn(
+                                "flex items-center justify-between rounded-md border px-2 py-1 text-sm",
+                                allowAllSectors
+                                    ? "border-slate-200 bg-slate-100 text-slate-500"
+                                    : "border-slate-200 bg-white text-slate-700",
+                            )}
+                        >
+                            <span>{sector.title}</span>
+                            <input
+                                type="checkbox"
+                                value={sector.id}
+                                {...register('allowedSectorIds', {
+                                    onChange: (event) => {
+                                        if (event.target.checked) {
+                                            setValue('allowAllSectors', false);
+                                        }
+                                    },
+                                })}
+                                className="h-4 w-4"
+                            />
+                        </label>
+                    ))}
+                </div>
+                {allowAllSectors && selectedSectorIds.length === 0 && (
+                    <p className="mt-2 text-xs text-slate-600">
+                        Se mostrara para todos los sectores.
+                    </p>
+                )}
+                {!allowAllSectors && selectedSectorIds.length === 0 && (
+                    <p className="mt-2 text-xs text-amber-700">
+                        Este producto quedara sin sectores habilitados.
+                    </p>
+                )}
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm font-medium text-slate-700">
+                Inventario
+            </span>
+            <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                currentStock > 199
+                    ? 'bg-green-100 text-green-800'
+                    : currentStock > 100
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+            >
+                {currentStock > 199
+                ? 'En stock'
+                : currentStock > 100
+                ? 'Bajo stock'
+                : 'Sin stock'}
+            </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm font-medium text-slate-700">
+                Imágenes
+            </span>
+            <span className="text-sm text-slate-600">
+                {images.length} imágenes
+            </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm font-medium text-slate-700">
+                Modo caja
+            </span>
+            <span className={cn(
+                "px-2 py-1 text-xs font-medium rounded-full",
+                allowBoxes ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-700"
+            )}>
+                {allowBoxes ? 'Permitido' : 'No permitido'}
+            </span>
+            </div>
+        </div>
+        </div>
+    );
 
 
   const handleDrag = (e: React.DragEvent) => {
@@ -303,91 +454,9 @@ export const ProductForm = ({title, subTitle, product, onSubmit, isPending, onDe
                 </div>
                 </div>
 
-                {/* Product Status */}
-                <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
-                <h2 className="text-xl font-semibold text-slate-800 mb-6">
-                    Estado del producto
-                </h2>
-
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm font-medium text-slate-700">
-                        Estado
-                    </span>
-                    <span className={cn(
-                        "px-2 py-1 text-xs font-medium rounded-full",
-                        isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    )}>
-                        {isActive ? 'Activo' : 'Inactivo'}
-                    </span>
-                    </div>
-
-                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-700">
-                            Habilitado para venta
-                        </span>
-                        <input
-                            type="checkbox"
-                            {...register('isActive')}
-                            className="h-4 w-4"
-                        />
-                    </label>
-
-                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-700">
-                            Permitir pedidos por caja
-                        </span>
-                        <input
-                            type="checkbox"
-                            {...register('allowBoxes')}
-                            className="h-4 w-4"
-                        />
-                    </label>
-
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm font-medium text-slate-700">
-                        Inventario
-                    </span>
-                    <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        currentStock > 199
-                            ? 'bg-green-100 text-green-800'
-                            : currentStock > 100
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                    >
-                        {currentStock > 199
-                        ? 'En stock'
-                        : currentStock > 100
-                        ? 'Bajo stock'
-                        : 'Sin stock'}
-                    </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm font-medium text-slate-700">
-                        Imágenes
-                    </span>
-                    <span className="text-sm text-slate-600">
-                        {images.length} imágenes
-                    </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm font-medium text-slate-700">
-                        Modo caja
-                    </span>
-                    <span className={cn(
-                        "px-2 py-1 text-xs font-medium rounded-full",
-                        allowBoxes ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-700"
-                    )}>
-                        {allowBoxes ? 'Permitido' : 'No permitido'}
-                    </span>
-                    </div>
-                </div>
-                </div>
+                {!isEditing && statusCard}
             </div>
+            {isEditing && <div className="lg:col-span-3">{statusCard}</div>}
             </div>
         </div>
         </form>

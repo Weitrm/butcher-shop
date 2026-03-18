@@ -9,8 +9,6 @@ export interface CreateSectorPayload {
   maxTotalKg?: number | null;
   maxItems?: number | null;
   maxOrdersPerWeek?: number | null;
-  allowAllProducts?: boolean;
-  allowedProductSlugs?: string[];
 }
 
 export const createSectorAction = async (

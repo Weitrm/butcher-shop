@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Trash2, X } from "lucide-react";
@@ -7,7 +7,6 @@ import { createSectorAction, type CreateSectorPayload } from "@/admin/actions/cr
 import { deleteSectorAction } from "@/admin/actions/delete-sector.action";
 import { updateSectorAction } from "@/admin/actions/update-sector.action";
 import { AdminTitle } from "@/admin/components/AdminTitle";
-import { useAdminProductSlugs } from "@/admin/hooks/useAdminProductSlugs";
 import { useAdminSectors } from "@/admin/hooks/useAdminSectors";
 import { SectorBadge } from "@/components/custom/SectorBadge";
 import { CustomFullScreenLoading } from "@/components/custom/CustomFullScreenLoading";
@@ -24,8 +23,6 @@ type SectorFormState = {
   maxTotalKg: string;
   maxItems: string;
   maxOrdersPerWeek: string;
-  allowAllProducts: boolean;
-  allowedProductSlugs: string[];
 };
 
 const weekdayOptions: Array<{ value: number; label: string }> = [
@@ -49,133 +46,6 @@ const emptyFormState: SectorFormState = {
   maxTotalKg: "",
   maxItems: "",
   maxOrdersPerWeek: "",
-  allowAllProducts: true,
-  allowedProductSlugs: [],
-};
-
-const normalizeSlug = (value: string) => value.trim().toLowerCase().replace(/\s+/g, "_");
-
-type SlugTagsInputProps = {
-  id: string;
-  label: string;
-  tags: string[];
-  availableSlugs: string[];
-  placeholder?: string;
-  disabled?: boolean;
-  onChange: (next: string[]) => void;
-};
-
-const SlugTagsInput = ({
-  id,
-  label,
-  tags,
-  availableSlugs,
-  placeholder,
-  disabled,
-  onChange,
-}: SlugTagsInputProps) => {
-  const [draft, setDraft] = useState("");
-
-  const filteredSuggestions = useMemo(() => {
-    const query = normalizeSlug(draft);
-    if (!query) return [];
-    const selected = new Set(tags);
-    return availableSlugs
-      .filter((slug) => !selected.has(slug) && slug.includes(query))
-      .slice(0, 8);
-  }, [availableSlugs, draft, tags]);
-
-  const addSlug = (value: string) => {
-    const normalized = normalizeSlug(value);
-    if (!normalized) return;
-    if (!availableSlugs.includes(normalized)) {
-      toast.error("Slug no valido. Selecciona uno de la lista sugerida.");
-      return;
-    }
-    if (tags.includes(normalized)) {
-      setDraft("");
-      return;
-    }
-    onChange([...tags, normalized]);
-    setDraft("");
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" || event.key === "," || event.key === " ") {
-      event.preventDefault();
-      if (filteredSuggestions.length === 1) {
-        addSlug(filteredSuggestions[0]);
-        return;
-      }
-      addSlug(draft);
-    }
-    if (event.key === "Backspace" && !draft && tags.length > 0) {
-      const next = [...tags];
-      next.pop();
-      onChange(next);
-    }
-  };
-
-  const handleBlur = () => {
-    if (!draft.trim()) return;
-    addSlug(draft);
-  };
-
-  return (
-    <div>
-      <label className="text-sm font-medium text-gray-700" htmlFor={id}>
-        {label}
-      </label>
-      <div className="mt-2 rounded-md border border-input bg-background px-2 py-2">
-        <div className="mb-2 flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
-            >
-              {tag}
-              <button
-                type="button"
-                className="leading-none"
-                onClick={() => onChange(tags.filter((item) => item !== tag))}
-                disabled={disabled}
-              >
-                x
-              </button>
-            </span>
-          ))}
-        </div>
-        <Input
-          id={id}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          disabled={disabled}
-        />
-        {filteredSuggestions.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {filteredSuggestions.map((slug) => (
-              <button
-                key={slug}
-                type="button"
-                className="rounded-full border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => addSlug(slug)}
-                disabled={disabled}
-              >
-                {slug}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-gray-500">
-        Elige slugs existentes. Separadores: espacio, coma o enter.
-      </p>
-    </div>
-  );
 };
 
 export const AdminSectorsPage = () => {
@@ -183,7 +53,6 @@ export const AdminSectorsPage = () => {
   const [editingSectorId, setEditingSectorId] = useState<string | null>(null);
   const [form, setForm] = useState<SectorFormState>(emptyFormState);
   const { data: sectors = [], isLoading: isSectorsLoading } = useAdminSectors();
-  const { data: availableSlugs = [], isLoading: isSlugsLoading } = useAdminProductSlugs();
 
   const createMutation = useMutation({
     mutationFn: createSectorAction,
@@ -255,8 +124,6 @@ export const AdminSectorsPage = () => {
       maxTotalKg: form.maxTotalKg ? Number(form.maxTotalKg) : null,
       maxItems: form.maxItems ? Number(form.maxItems) : null,
       maxOrdersPerWeek: form.maxOrdersPerWeek ? Number(form.maxOrdersPerWeek) : null,
-      allowAllProducts: form.allowAllProducts,
-      allowedProductSlugs: form.allowedProductSlugs,
     };
 
     if (editingSectorId) {
@@ -267,13 +134,13 @@ export const AdminSectorsPage = () => {
     await createMutation.mutateAsync(payload);
   };
 
-  if (isSectorsLoading || isSlugsLoading) {
+  if (isSectorsLoading) {
     return <CustomFullScreenLoading />;
   }
 
   return (
     <>
-      <AdminTitle title="Sectores" subtitle="Gestion de sectores, permisos y productos por slug" />
+      <AdminTitle title="Sectores" subtitle="Gestion de sectores y limites operativos" />
 
       <Card className="mb-6">
         <CardContent className="p-5">
@@ -349,29 +216,7 @@ export const AdminSectorsPage = () => {
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-1">
-              <SlugTagsInput
-                id="allowed-product-slugs"
-                label="Slugs permitidos"
-                tags={form.allowedProductSlugs}
-                availableSlugs={availableSlugs}
-                placeholder="Escribe para buscar y seleccionar"
-                onChange={(next) => setForm((prev) => ({ ...prev, allowedProductSlugs: next }))}
-                disabled={form.allowAllProducts}
-              />
-            </div>
-
             <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.allowAllProducts}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, allowAllProducts: event.target.checked }))
-                  }
-                />
-                Permitir todos los productos
-              </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="checkbox"
@@ -414,7 +259,6 @@ export const AdminSectorsPage = () => {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Dia preparacion</TableHead>
                 <TableHead>Limites</TableHead>
-                <TableHead>Productos</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -422,7 +266,7 @@ export const AdminSectorsPage = () => {
             <TableBody>
               {sectors.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-gray-500">
+                  <TableCell colSpan={5} className="text-center text-sm text-gray-500">
                     No hay sectores registrados.
                   </TableCell>
                 </TableRow>
@@ -439,11 +283,6 @@ export const AdminSectorsPage = () => {
                       {sector.maxOrdersPerWeek
                         ? `${sector.maxOrdersPerWeek} pedidos/sem`
                         : "Sin limite semanal"}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">
-                      {sector.allowAllProducts
-                        ? "Todos"
-                        : `${sector.allowedProductSlugs.length} permitidos`}
                     </TableCell>
                     <TableCell>{sector.isActive ? "Activo" : "Inactivo"}</TableCell>
                     <TableCell className="text-right">
@@ -464,8 +303,6 @@ export const AdminSectorsPage = () => {
                               maxOrdersPerWeek: sector.maxOrdersPerWeek
                                 ? String(sector.maxOrdersPerWeek)
                                 : "",
-                              allowAllProducts: sector.allowAllProducts,
-                              allowedProductSlugs: [...(sector.allowedProductSlugs || [])],
                             });
                           }}
                         >

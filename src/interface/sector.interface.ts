@@ -7,8 +7,6 @@ export interface Sector {
   maxTotalKg: number | null;
   maxItems: number | null;
   maxOrdersPerWeek?: number | null;
-  allowAllProducts: boolean;
-  allowedProductSlugs: string[];
   createdAt?: string;
   updatedAt?: string;
 }

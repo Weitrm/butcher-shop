@@ -21,6 +21,21 @@ export const createUpdateProductAction = async (
     rest.maxKgPerOrder = Number(rest.maxKgPerOrder || 10);
     rest.isActive = rest.isActive === undefined ? true : Boolean(rest.isActive);
     rest.allowBoxes = rest.allowBoxes === undefined ? false : Boolean(rest.allowBoxes);
+    rest.allowAllSectors =
+        rest.allowAllSectors === undefined ? true : Boolean(rest.allowAllSectors);
+    rest.allowedSectorIds = Array.from(
+        new Set(
+            ((rest.allowedSectorIds || []) as string[])
+                .map((sectorId) => sectorId?.trim())
+                .filter((sectorId) => Boolean(sectorId)),
+        ),
+    );
+    if ((rest.allowedSectorIds || []).length > 0) {
+        rest.allowAllSectors = false;
+    }
+    if (rest.allowAllSectors) {
+        rest.allowedSectorIds = [];
+    }
 
 
     // Preparar las imagenes

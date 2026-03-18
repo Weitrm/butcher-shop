@@ -53,7 +53,11 @@ const AdminLayout = lazy(() => import("./admin/layouts/AdminLayout"));
 export const appRouter = createHashRouter([
   {
     path: "/",
-    element: <ShopLayout />,
+    element: (
+      <AuthenticatedRoute>
+        <ShopLayout />
+      </AuthenticatedRoute>
+    ),
     children: [
       {
         index: true,

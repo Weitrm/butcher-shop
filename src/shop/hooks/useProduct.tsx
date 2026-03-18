@@ -13,6 +13,8 @@ export const useProduct = (id: string) => {
     queryFn: () => getProductByIdAction(id, isAuthenticated),
     enabled: Boolean(id),
     retry: false,
-    staleTime: 1000 * 60 * 5,
+    staleTime: isAuthenticated ? 1000 * 30 : 1000 * 60 * 5,
+    refetchOnMount: isAuthenticated ? "always" : true,
+    refetchOnWindowFocus: isAuthenticated,
   });
 };

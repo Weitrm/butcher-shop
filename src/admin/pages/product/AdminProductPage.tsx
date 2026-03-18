@@ -1,6 +1,7 @@
 ﻿import { Navigate, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import { useProduct } from '@/admin/hooks/useProduct';
+import { useAdminSectors } from '@/admin/hooks/useAdminSectors';
 import { CustomFullScreenLoading } from '@/components/custom/CustomFullScreenLoading';
 import { ProductForm } from './ui/ProductForm';
 import type { Product } from '@/interface/product.interface';
@@ -10,6 +11,7 @@ export const AdminProductPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const {isLoading, isError, data: product, mutation, deleteImageMutation} = useProduct(id || '');
+  const { data: sectors = [], isLoading: isLoadingSectors } = useAdminSectors();
 
   
   const title = id === 'new' ? 'Nuevo producto' : 'Editar producto';
@@ -65,7 +67,7 @@ export const AdminProductPage = () => {
   if (isError) {
     return <Navigate to="/admin/products" />;
   }
-  if (isLoading) {
+  if (isLoading || isLoadingSectors) {
     return <CustomFullScreenLoading />;
   }
   if (!product) {
@@ -76,6 +78,7 @@ export const AdminProductPage = () => {
     title={title}
     subTitle={subTitle}
     product={product}
+    sectors={sectors}
     onSubmit={handleSubmit}
     isPending={mutation.isPending}
     onDeleteImage={handleDeleteImage}

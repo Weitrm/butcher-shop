@@ -10,6 +10,8 @@ export interface Product {
     isActive:    boolean;
     maxKgPerOrder: number;
     allowBoxes:  boolean;
+    allowAllSectors: boolean;
+    allowedSectorIds: string[];
     gender:      string;
     images:      string[];
     user:        User | null;
