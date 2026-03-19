@@ -11,6 +11,7 @@ import { useCartStore } from "@/shop/store/cart.store";
 import { useAuthStore } from "@/auth/store/auth.store";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { currencyFormatter } from "@/lib/currency-formatter";
 import { hasSuperUserRole } from "@/lib/user-roles";
 
 const SUPER_MAX_KG = 9999;
@@ -158,7 +159,9 @@ export const ProductPage = () => {
           <div className="space-y-6">
             <div className="space-y-2">
               <h1 className="text-3xl lg:text-4xl font-montserrat">{product.title}</h1>
-              <p className="text-2xl font-semibold">${product.price}</p>
+              <p className="text-2xl font-semibold" translate="no">
+                {currencyFormatter(product.price)}
+              </p>
               <p className="text-muted-foreground leading-relaxed">{product.description}</p>
             </div>
 

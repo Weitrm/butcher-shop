@@ -223,7 +223,7 @@ export const HistoryPage = () => {
             <Card className="border-slate-200 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Total gastado</p>
-                <p className="text-xl font-semibold text-slate-900">
+                <p className="text-xl font-semibold text-slate-900" translate="no">
                   {summary.hasBoxOrders
                     ? "Precio no disponible (incluye cajas)"
                     : currencyFormatter(summary.totalPrice)}
@@ -296,13 +296,13 @@ export const HistoryPage = () => {
                           )}
                           <div>
                             <p className="font-medium">{item.product.title}</p>
-                            <p className="text-muted-foreground">
+                            <p className="text-muted-foreground" translate="no">
                               {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
                             </p>
                           </div>
                         </div>
                         <span className="font-medium">
-                          {item.isBox ? "No disponible" : `$${item.subtotal}`}
+                          {item.isBox ? "No disponible" : <span translate="no">{currencyFormatter(item.subtotal)}</span>}
                         </span>
                       </div>
                     ))}
@@ -314,7 +314,7 @@ export const HistoryPage = () => {
                     <span className="text-muted-foreground">Total</span>
                     <span className="font-semibold">
                       {isOrderPriceAvailable(order.items)
-                        ? `$${order.totalPrice}`
+                        ? <span translate="no">{currencyFormatter(order.totalPrice)}</span>
                         : "Precio no disponible (incluye cajas)"}{" "}
                       ({formatOrderUnitsSummary(order.items, order.totalKg)})
                     </span>

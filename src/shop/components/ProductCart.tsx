@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/shop/store/cart.store";
 import { useAuthStore } from "@/auth/store/auth.store";
+import { currencyFormatter } from "@/lib/currency-formatter";
 import { hasSuperUserRole } from "@/lib/user-roles";
 
 interface ProductCardProps {
@@ -117,7 +118,11 @@ export const ProductCard = ({
           <div className="space-y-3">
             <div>
               <p className="font-semibold text-lg">
-                {isBox ? "Precio no disponible para cajas" : `$${price} / kg`}
+                {isBox ? (
+                  "Precio no disponible para cajas"
+                ) : (
+                  <span translate="no">{currencyFormatter(price)} / kg</span>
+                )}
               </p>
               <p className="text-xs text-muted-foreground">
                 {isSuperUser ? "Sin limite de cantidad" : `Maximo ${kgLimit} ${quantityLabel}`}

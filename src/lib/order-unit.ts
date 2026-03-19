@@ -1,3 +1,5 @@
+import { currencyFormatter } from "@/lib/currency-formatter";
+
 export const getUnitLabel = (isBox: boolean, quantity = 1) => {
   if (!isBox) return "kg";
   return quantity === 1 ? "caja" : "cajas";
@@ -9,7 +11,7 @@ export const formatQuantityWithUnit = (quantity: number, isBox: boolean) =>
 export const formatOrderItemDetail = (quantity: number, unitPrice: number, isBox: boolean) =>
   isBox
     ? `${formatQuantityWithUnit(quantity, isBox)} (precio no disponible)`
-    : `${formatQuantityWithUnit(quantity, isBox)} x $${unitPrice}`;
+    : `${formatQuantityWithUnit(quantity, isBox)} x ${currencyFormatter(unitPrice)}`;
 
 export const formatOrderItemSummary = (
   productTitle: string,

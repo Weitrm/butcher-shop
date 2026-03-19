@@ -17,6 +17,7 @@ import {
   getUnitLabel,
   isOrderPriceAvailable,
 } from "@/lib/order-unit";
+import { currencyFormatter } from "@/lib/currency-formatter";
 import {
   formatWeeklyOrdersLabel,
   getEffectiveWeeklyOrderLimit,
@@ -83,13 +84,13 @@ const LatestOrderCard = ({ order }: { order: Order }) => (
               )}
               <div>
                 <p className="font-medium">{item.product.title}</p>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground" translate="no">
                   {formatOrderItemDetail(item.kg, item.unitPrice, item.isBox)}
                 </p>
               </div>
             </div>
             <span className="font-medium">
-              {item.isBox ? "No disponible" : `$${item.subtotal}`}
+              {item.isBox ? "No disponible" : <span translate="no">{currencyFormatter(item.subtotal)}</span>}
             </span>
           </div>
         ))}
@@ -101,7 +102,7 @@ const LatestOrderCard = ({ order }: { order: Order }) => (
         <span className="text-muted-foreground">Total</span>
         <span className="font-semibold">
           {isOrderPriceAvailable(order.items)
-            ? `$${order.totalPrice}`
+            ? <span translate="no">{currencyFormatter(order.totalPrice)}</span>
             : "Precio no disponible (incluye cajas)"}{" "}
           ({formatOrderUnitsSummary(order.items, order.totalKg)})
         </span>
@@ -311,7 +312,7 @@ export const OrderPage = () => {
                             <div>
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {item.isBox ? "Precio no disponible para cajas" : `$${item.price} / kg`}
+                                {item.isBox ? "Precio no disponible para cajas" : <span translate="no">{currencyFormatter(item.price)} / kg</span>}
                               </p>
                               {!isSuperUser && (
                                 <p className="text-xs text-muted-foreground">
@@ -401,7 +402,7 @@ export const OrderPage = () => {
                       <span className="font-semibold">
                         {orderUnits.totalBoxes > 0
                           ? "Precio no disponible (incluye cajas)"
-                          : `$${totalPrice}`}
+                          : <span translate="no">{currencyFormatter(totalPrice)}</span>}
                       </span>
                     </div>
                   </div>
