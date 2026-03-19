@@ -578,8 +578,8 @@ export const AdminOrdersPage = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-medium">{order.user?.fullName || "Sin nombre"}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="font-medium text-gray-500">{order.user?.fullName || "Sin nombre"}</span>
+                    <span className="text-xs font-bold">
                       {order.user
                         ? [
                             order.user.employeeNumber ? `Func. ${order.user.employeeNumber}` : null,
