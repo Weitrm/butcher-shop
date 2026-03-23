@@ -25,8 +25,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { OrderStatus } from "@/interface/order.interface";
-import { currencyFormatter } from "@/lib/currency-formatter";
-import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
+import { formatOrderDisplayedPrice, formatOrderUnitsSummary } from "@/lib/order-unit";
 import { getSectorTextColor, normalizeSectorColor } from "@/lib/sector-color";
 
 const formatDate = (value: string) =>
@@ -589,9 +588,7 @@ export const AdminOrdersPage = () => {
                 </TableCell>
                 <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
                 <TableCell>
-                  {isOrderPriceAvailable(order.items)
-                    ? currencyFormatter(order.totalPrice)
-                    : "Precio no disponible"}
+                  {formatOrderDisplayedPrice(order.totalPrice, order.items)}
                 </TableCell>
                 <TableCell>{formatDate(order.createdAt)}</TableCell>
                 <TableCell>{order.preparationDate || "-"}</TableCell>

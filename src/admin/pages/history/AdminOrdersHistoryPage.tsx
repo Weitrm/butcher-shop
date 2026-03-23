@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
-import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
+import { formatOrderDisplayedPrice, formatOrderUnitsSummary } from "@/lib/order-unit";
 import { getSectorTextColor, normalizeSectorColor } from "@/lib/sector-color";
 
 const formatDate = (value: string) =>
@@ -453,9 +453,9 @@ export const AdminOrdersHistoryPage = () => {
             <p className="text-xl font-semibold text-slate-900">
               {isSummaryLoading && !summaryData
                 ? "-"
-                : summary.hasBoxOrders
-                ? "Precio no disponible (incluye cajas)"
-                : currencyFormatter(summary.totalPrice)}
+                : `${currencyFormatter(summary.totalPrice)}${
+                    summary.hasBoxOrders ? " (no incluye cajas)" : ""
+                  }`}
             </p>
           </CardContent>
         </Card>
@@ -531,9 +531,7 @@ export const AdminOrdersHistoryPage = () => {
                     </TableCell>
                     <TableCell>{formatOrderUnitsSummary(order.items, order.totalKg)}</TableCell>
                     <TableCell>
-                      {isOrderPriceAvailable(order.items)
-                        ? currencyFormatter(order.totalPrice)
-                        : "Precio no disponible"}
+                      {formatOrderDisplayedPrice(order.totalPrice, order.items)}
                     </TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
                     <TableCell>{order.preparationDate || "-"}</TableCell>

@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { Order } from "@/interface/order.interface";
 import {
+  formatOrderDisplayedPrice,
   formatOrderItemDetail,
   formatOrderUnitsSummary,
   getOrderUnits,
   getUnitLabel,
-  isOrderPriceAvailable,
 } from "@/lib/order-unit";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import {
@@ -100,10 +100,8 @@ const LatestOrderCard = ({ order }: { order: Order }) => (
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Total</span>
-        <span className="font-semibold">
-          {isOrderPriceAvailable(order.items)
-            ? <span translate="no">{currencyFormatter(order.totalPrice)}</span>
-            : "Precio no disponible (incluye cajas)"}{" "}
+        <span className="font-semibold" translate="no">
+          {formatOrderDisplayedPrice(order.totalPrice, order.items)}{" "}
           ({formatOrderUnitsSummary(order.items, order.totalKg)})
         </span>
       </div>
@@ -399,10 +397,8 @@ export const OrderPage = () => {
                     )}
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Total</span>
-                      <span className="font-semibold">
-                        {orderUnits.totalBoxes > 0
-                          ? "Precio no disponible (incluye cajas)"
-                          : <span translate="no">{currencyFormatter(totalPrice)}</span>}
+                      <span className="font-semibold" translate="no">
+                        {formatOrderDisplayedPrice(totalPrice, items)}
                       </span>
                     </div>
                   </div>

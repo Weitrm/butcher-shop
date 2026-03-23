@@ -30,6 +30,19 @@ export const hasBoxItems = (items: UnitItemLike[]) =>
 export const isOrderPriceAvailable = (items: UnitItemLike[]) =>
   !hasBoxItems(items);
 
+export const formatOrderDisplayedPrice = (
+  totalPrice: number,
+  items: UnitItemLike[],
+) => {
+  const displayedPrice = currencyFormatter(totalPrice);
+
+  if (!hasBoxItems(items)) {
+    return displayedPrice;
+  }
+
+  return `${displayedPrice} (no incluye cajas)`;
+};
+
 export const getOrderUnits = (items: UnitItemLike[]) =>
   items.reduce(
     (acc, item) => {

@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { SectorBadge } from "@/components/custom/SectorBadge";
 import type { Order, OrderStatus } from "@/interface/order.interface";
-import { currencyFormatter } from "@/lib/currency-formatter";
-import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
+import { formatOrderDisplayedPrice, formatOrderUnitsSummary } from "@/lib/order-unit";
 
 import { AdminSideDrawer } from "../shared/AdminSideDrawer";
 import { AdminOrderItemsList } from "./AdminOrderItemsList";
@@ -40,8 +39,6 @@ export const AdminOrderDetailDrawer = ({
   if (!order) {
     return null;
   }
-
-  const isPriceAvailable = isOrderPriceAvailable(order.items);
 
   return (
     <AdminSideDrawer
@@ -172,7 +169,7 @@ export const AdminOrderDetailDrawer = ({
               Total
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-900">
-              {isPriceAvailable ? currencyFormatter(order.totalPrice) : "Precio no disponible"}
+              {formatOrderDisplayedPrice(order.totalPrice, order.items)}
             </p>
           </div>
 

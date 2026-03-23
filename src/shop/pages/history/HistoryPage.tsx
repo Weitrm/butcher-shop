@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import {
+  formatOrderDisplayedPrice,
   formatOrderItemDetail,
   formatOrderUnitsSummary,
   getOrderUnits,
@@ -224,9 +225,8 @@ export const HistoryPage = () => {
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Total gastado</p>
                 <p className="text-xl font-semibold text-slate-900" translate="no">
-                  {summary.hasBoxOrders
-                    ? "Precio no disponible (incluye cajas)"
-                    : currencyFormatter(summary.totalPrice)}
+                  {currencyFormatter(summary.totalPrice)}
+                  {summary.hasBoxOrders ? " (no incluye cajas)" : ""}
                 </p>
               </CardContent>
             </Card>
@@ -312,10 +312,8 @@ export const HistoryPage = () => {
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Total</span>
-                    <span className="font-semibold">
-                      {isOrderPriceAvailable(order.items)
-                        ? <span translate="no">{currencyFormatter(order.totalPrice)}</span>
-                        : "Precio no disponible (incluye cajas)"}{" "}
+                    <span className="font-semibold" translate="no">
+                      {formatOrderDisplayedPrice(order.totalPrice, order.items)}{" "}
                       ({formatOrderUnitsSummary(order.items, order.totalKg)})
                     </span>
                   </div>
