@@ -16,6 +16,7 @@ interface Options {
   useSearchParams?: boolean;
   status?: OrderStatus;
   hasBoxes?: boolean;
+  sort?: "default" | "statusEmployeeAsc";
   limit?: number;
   page?: number;
 }
@@ -44,6 +45,7 @@ export const useAdminOrders = (options: Options = {}) => {
   const queryOptions: GetAdminOrdersOptions = {
     limit: safeLimit,
     offset,
+    sort: options.sort,
     ...filters,
   };
 
@@ -53,6 +55,7 @@ export const useAdminOrders = (options: Options = {}) => {
       {
         limit: safeLimit,
         offset,
+        sort: options.sort || "",
         ...buildAdminOrderFiltersQueryKey(filters),
       },
     ],

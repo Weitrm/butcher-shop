@@ -7,6 +7,7 @@ export interface GetAdminOrdersOptions {
   limit?: number | string;
   offset?: number | string;
   scope?: string;
+  sort?: "default" | "statusEmployeeAsc";
   user?: string;
   product?: string;
   fromDate?: string;
@@ -24,6 +25,7 @@ export const getAdminOrdersAction = async (
     limit,
     offset,
     scope,
+    sort,
     user,
     product,
     fromDate,
@@ -38,6 +40,7 @@ export const getAdminOrdersAction = async (
       limit,
       offset,
       scope,
+      sort,
       user,
       product,
       fromDate,

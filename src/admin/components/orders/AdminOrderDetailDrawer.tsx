@@ -127,7 +127,7 @@ export const AdminOrderDetailDrawer = ({
           <select
             value={order.status}
             onChange={(event) => onStatusChange(order.id, event.target.value as OrderStatus)}
-            disabled={isUpdating}
+            disabled={isUpdating || order.status === "completed"}
             className={`mt-3 h-10 w-full rounded-md border px-3 text-sm font-medium ${adminOrderStatusStyles[order.status]}`}
           >
             {adminOrderStatusOptions.map((status) => (

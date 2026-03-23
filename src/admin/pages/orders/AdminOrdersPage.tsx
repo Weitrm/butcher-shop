@@ -29,18 +29,6 @@ import { currencyFormatter } from "@/lib/currency-formatter";
 import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
 import { getSectorTextColor, normalizeSectorColor } from "@/lib/sector-color";
 
-const statusPriority: Record<OrderStatus, number> = {
-  pending: 0,
-  completed: 1,
-  cancelled: 2,
-};
-
-const getEmployeeNumberValue = (employeeNumber?: string | null) => {
-  if (!employeeNumber) return Number.MAX_SAFE_INTEGER;
-  const parsed = Number(employeeNumber);
-  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
-};
-
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("es-AR", {
     dateStyle: "medium",
@@ -142,29 +130,18 @@ export const AdminOrdersPage = () => {
     }),
   );
   const { data: sectors = [] } = useAdminSectors();
-  const { data, isLoading, isFetching } = useAdminOrders({ scope: "week" });
+  const { data, isLoading, isFetching } = useAdminOrders({
+    scope: "week",
+    sort: "statusEmployeeAsc",
+  });
   const { data: summaryData, isLoading: isSummaryLoading, isFetching: isSummaryFetching } =
     useAdminOrdersSummary({
       scope: "week",
     });
-  const sortedOrders = useMemo(
-    () =>
-      [...(data?.orders ?? [])].sort((a, b) => {
-        const statusDiff = statusPriority[a.status] - statusPriority[b.status];
-        if (statusDiff !== 0) return statusDiff;
-
-        const employeeNumberDiff =
-          getEmployeeNumberValue(a.user?.employeeNumber) -
-          getEmployeeNumberValue(b.user?.employeeNumber);
-        if (employeeNumberDiff !== 0) return employeeNumberDiff;
-
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }),
-    [data?.orders],
-  );
+  const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
   const selectedOrder = useMemo(
-    () => sortedOrders.find((order) => order.id === selectedOrderId) || null,
-    [selectedOrderId, sortedOrders],
+    () => orders.find((order) => order.id === selectedOrderId) || null,
+    [orders, selectedOrderId],
   );
   const queryClient = useQueryClient();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -550,14 +527,14 @@ export const AdminOrdersPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="text-center text-sm text-gray-500">
                     No hay pedidos en esta vista.
               </TableCell>
             </TableRow>
           ) : (
-            sortedOrders.map((order) => (
+            orders.map((order) => (
               <TableRow
                 key={order.id}
                 className={selectedOrderId === order.id ? "bg-sky-50/60" : undefined}
@@ -624,7 +601,7 @@ export const AdminOrdersPage = () => {
                     onChange={(event) =>
                       handleStatusChange(order.id, event.target.value as OrderStatus)
                     }
-                    disabled={updatingOrderId === order.id}
+                    disabled={updatingOrderId === order.id || order.status === "completed"}
                     className={`h-9 rounded-md border px-3 text-sm font-medium ${adminOrderStatusStyles[order.status]}`}
                   >
                     {adminOrderStatusOptions.map((status) => (

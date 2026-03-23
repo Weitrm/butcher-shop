@@ -1,9 +1,18 @@
 import { useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router";
 import { CalendarDays, Search, X } from "lucide-react";
+import axios from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
+import { updateOrderStatusAction } from "@/admin/actions/update-order-status.action";
 import { AdminTitle } from "@/admin/components/AdminTitle";
 import { OrderItemsSummaryCell } from "@/admin/components/orders/OrderItemsSummaryCell";
+import {
+  adminOrderStatusOptionStyles,
+  adminOrderStatusOptions,
+  adminOrderStatusStyles,
+} from "@/admin/components/orders/orderStatusUI";
 import { useAdminOrders } from "@/admin/hooks/useAdminOrders";
 import { useAdminOrdersHistorySummary } from "@/admin/hooks/useAdminOrdersHistorySummary";
 import { useAdminSectors } from "@/admin/hooks/useAdminSectors";
@@ -18,24 +27,6 @@ import type { OrderStatus } from "@/interface/order.interface";
 import { currencyFormatter } from "@/lib/currency-formatter";
 import { formatOrderUnitsSummary, isOrderPriceAvailable } from "@/lib/order-unit";
 import { getSectorTextColor, normalizeSectorColor } from "@/lib/sector-color";
-
-const statusLabels: Record<string, string> = {
-  pending: "Pendiente",
-  completed: "Completado",
-  cancelled: "Cancelado",
-};
-
-const statusStyles: Record<string, string> = {
-  pending: "border-amber-200 bg-amber-100 text-amber-800",
-  completed: "border-emerald-200 bg-emerald-100 text-emerald-800",
-  cancelled: "border-rose-200 bg-rose-100 text-rose-800",
-};
-
-const statusOptions: Array<{ value: OrderStatus; label: string }> = [
-  { value: "pending", label: "Pendiente" },
-  { value: "completed", label: "Completado" },
-  { value: "cancelled", label: "Cancelado" },
-];
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleString("es-AR", {
@@ -64,7 +55,10 @@ const getStatusFilterChipStyle = (status: string | null) => {
     return "border-slate-200 bg-slate-100 text-slate-700";
   }
 
-  return statusStyles[status] || "border-slate-200 bg-slate-100 text-slate-700";
+  return (
+    adminOrderStatusStyles[status as OrderStatus] ||
+    "border-slate-200 bg-slate-100 text-slate-700"
+  );
 };
 
 const filterChipBaseClassName = "inline-flex items-center rounded-full border px-2.5 py-1 font-medium";
@@ -98,10 +92,15 @@ export const AdminOrdersHistoryPage = () => {
   const [sectorId, setSectorId] = useState(initialSectorId);
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [hasBoxesOnly, setHasBoxesOnly] = useState(initialHasBoxes);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const { data: sectors = [] } = useAdminSectors();
   const { data, isLoading } = useAdminOrders({ scope: "history" });
   const { data: summaryData, isLoading: isSummaryLoading } = useAdminOrdersHistorySummary({
     scope: "history",
+  });
+  const queryClient = useQueryClient();
+  const statusMutation = useMutation({
+    mutationFn: updateOrderStatusAction,
   });
   const orders = data?.orders || [];
   const isInvalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
@@ -202,6 +201,29 @@ export const AdminOrdersHistoryPage = () => {
     if (filter === "hasBoxes") setHasBoxesOnly(false);
   };
 
+  const handleStatusChange = async (orderId: string, status: OrderStatus) => {
+    setUpdatingOrderId(orderId);
+    try {
+      await statusMutation.mutateAsync({ orderId, status });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders-history-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Estado actualizado");
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+        const normalizedMessage = Array.isArray(message) ? message.join(", ") : message;
+        toast.error(normalizedMessage || "No se pudo actualizar el estado");
+      } else {
+        toast.error("No se pudo actualizar el estado");
+      }
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   if (isLoading) {
     return <CustomFullScreenLoading />;
   }
@@ -289,7 +311,7 @@ export const AdminOrdersHistoryPage = () => {
                 className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="all">Todos</option>
-                {statusOptions.map((status) => (
+                {adminOrderStatusOptions.map((status) => (
                   <option key={status.value} value={status.value}>
                     {status.label}
                   </option>
@@ -389,7 +411,7 @@ export const AdminOrdersHistoryPage = () => {
                   onClick={() => removeFilter("status")}
                   className={getFilterChipClassName(getStatusFilterChipStyle(searchParams.get("status")))}
                 >
-                  Estado: {statusOptions.find((item) => item.value === searchParams.get("status"))?.label} x
+                  Estado: {adminOrderStatusOptions.find((item) => item.value === searchParams.get("status"))?.label} x
                 </button>
               )}
               {searchParams.get("hasBoxes") === "true" && (
@@ -516,14 +538,24 @@ export const AdminOrdersHistoryPage = () => {
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
                     <TableCell>{order.preparationDate || "-"}</TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                          statusStyles[order.status] ||
-                          "border-slate-200 bg-slate-100 text-slate-700"
-                        }`}
+                      <select
+                        value={order.status}
+                        onChange={(event) =>
+                          handleStatusChange(order.id, event.target.value as OrderStatus)
+                        }
+                        disabled={updatingOrderId === order.id || order.status === "completed"}
+                        className={`h-9 rounded-md border px-3 text-sm font-medium ${adminOrderStatusStyles[order.status]}`}
                       >
-                        {statusLabels[order.status] || order.status}
-                      </span>
+                        {adminOrderStatusOptions.map((status) => (
+                          <option
+                            key={status.value}
+                            value={status.value}
+                            style={adminOrderStatusOptionStyles[status.value]}
+                          >
+                            {status.label}
+                          </option>
+                        ))}
+                      </select>
                     </TableCell>
                   </TableRow>
                 ))
