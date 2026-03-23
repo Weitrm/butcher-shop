@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { CalendarDays, X } from "lucide-react";
 
 import { useOrders } from "@/shop/hooks/useOrders";
+import { useOrdersHistorySummary } from "@/shop/hooks/useOrdersHistorySummary";
 import { CustomJumbotron } from "@/shop/components/CustomJumbotron";
 import { CustomPagination } from "@/components/custom/CustomPagination";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,6 @@ import {
   formatOrderDisplayedPrice,
   formatOrderItemDetail,
   formatOrderUnitsSummary,
-  getOrderUnits,
-  isOrderPriceAvailable,
 } from "@/lib/order-unit";
 
 const statusLabels: Record<string, string> = {
@@ -56,6 +55,7 @@ export const HistoryPage = () => {
   const [fromDate, setFromDate] = useState(initialFromDate);
   const [toDate, setToDate] = useState(initialToDate);
   const { data, isLoading } = useOrders();
+  const { data: summaryData, isLoading: isSummaryLoading } = useOrdersHistorySummary();
   const orders = useMemo(() => data?.orders || [], [data?.orders]);
   const orderedOrders = useMemo(
     () =>
@@ -70,30 +70,14 @@ export const HistoryPage = () => {
     searchParams.get("fromDate") || searchParams.get("toDate"),
   );
 
-  const summary = useMemo(
-    () =>
-      orderedOrders.reduce(
-        (acc, order) => {
-          const units = getOrderUnits(order.items);
-          acc.total += 1;
-          acc.totalKg += units.totalKg;
-          acc.totalBoxes += units.totalBoxes;
-          acc.totalPrice += order.totalPrice;
-          if (!isOrderPriceAvailable(order.items)) acc.hasBoxOrders = true;
-          if (order.status === "pending") acc.pending += 1;
-          return acc;
-        },
-        {
-          total: 0,
-          totalKg: 0,
-          totalBoxes: 0,
-          totalPrice: 0,
-          pending: 0,
-          hasBoxOrders: false,
-        },
-      ),
-    [orderedOrders],
-  );
+  const summary = summaryData || {
+    total: 0,
+    totalKg: 0,
+    totalBoxes: 0,
+    totalPrice: 0,
+    pending: 0,
+    hasBoxOrders: false,
+  };
 
   const handleApplyDateFilters = () => {
     if (isInvalidDateRange) return;
@@ -208,7 +192,9 @@ export const HistoryPage = () => {
             <Card className="border-slate-200 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Pedidos</p>
-                <p className="text-2xl font-semibold text-slate-900">{summary.total}</p>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {isSummaryLoading && !summaryData ? "-" : summary.total}
+                </p>
               </CardContent>
             </Card>
             <Card className="border-slate-200 shadow-sm">
@@ -217,7 +203,9 @@ export const HistoryPage = () => {
                   Total pedidos
                 </p>
                 <p className="text-xl font-semibold text-slate-900">
-                  {summary.totalKg} kg / {summary.totalBoxes} cajas
+                  {isSummaryLoading && !summaryData
+                    ? "-"
+                    : `${summary.totalKg} kg / ${summary.totalBoxes} cajas`}
                 </p>
               </CardContent>
             </Card>
@@ -225,15 +213,20 @@ export const HistoryPage = () => {
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Total gastado</p>
                 <p className="text-xl font-semibold text-slate-900" translate="no">
-                  {currencyFormatter(summary.totalPrice)}
-                  {summary.hasBoxOrders ? " (no incluye cajas)" : ""}
+                  {isSummaryLoading && !summaryData
+                    ? "-"
+                    : `${currencyFormatter(summary.totalPrice)}${
+                        summary.hasBoxOrders ? " (no incluye cajas)" : ""
+                      }`}
                 </p>
               </CardContent>
             </Card>
             <Card className="border-slate-200 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Pendientes</p>
-                <p className="text-2xl font-semibold text-slate-900">{summary.pending}</p>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {isSummaryLoading && !summaryData ? "-" : summary.pending}
+                </p>
               </CardContent>
             </Card>
           </div>
