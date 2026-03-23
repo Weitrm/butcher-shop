@@ -29,6 +29,8 @@ const createEmptySummary = (): OrdersHistorySummary => ({
 });
 
 const appendOrderToSummary = (summary: OrdersHistorySummary, order: Order) => {
+  if (order.status === "cancelled") return;
+
   const units = getOrderUnits(order.items);
   summary.total += 1;
   summary.totalKg += units.totalKg;
