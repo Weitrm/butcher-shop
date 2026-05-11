@@ -66,6 +66,7 @@ export const  ProductsGrid = ({products}: Props) => {
                     isActive={product.isActive}
                     maxKgPerOrder={product.maxKgPerOrder}
                     allowBoxes={product.allowBoxes}
+                    onlyBoxes={product.onlyBoxes}
                     initialKg={0}
                   />
                 ))}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { ArrowLeft, Minus, Plus, ShoppingBag } from "lucide-react";
@@ -53,6 +53,7 @@ export const ProductPage = () => {
   const [isBox, setIsBox] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const addItem = useCartStore((state) => state.addItem);
+  const effectiveIsBox = Boolean(product?.onlyBoxes) || isBox;
 
   if (isLoading) {
     return <CustomFullScreenLoading />;
@@ -169,11 +170,13 @@ export const ProductPage = () => {
 
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium mb-2">Cantidad (KG)</p>
+                <p className="text-sm font-medium mb-2">
+                  Cantidad ({effectiveIsBox ? "CAJAS" : "KG"})
+                </p>
                 <p className="text-xs text-muted-foreground mb-2">
                   {isSuperUser
-                    ? "Sin limite de kg para tu usuario"
-                    : `Máximo ${quantityLimit} kg para este producto`}
+                    ? `Sin limite de ${effectiveIsBox ? "cajas" : "kg"} para tu usuario`
+                    : `Maximo ${quantityLimit} ${effectiveIsBox ? "cajas" : "kg"} para este producto`}
                 </p>
                 <div className="flex items-center gap-3">
                   <Button
@@ -196,11 +199,11 @@ export const ProductPage = () => {
                 </div>
               </div>
 
-              {product.allowBoxes && (
+              {product.allowBoxes && !product.onlyBoxes && (
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant={isBox ? "outline" : "default"}
+                    variant={effectiveIsBox ? "outline" : "default"}
                     size="sm"
                     onClick={() => setIsBox(false)}
                     disabled={isOrderingDisabled}
@@ -209,7 +212,7 @@ export const ProductPage = () => {
                   </Button>
                   <Button
                     type="button"
-                    variant={isBox ? "default" : "outline"}
+                    variant={effectiveIsBox ? "default" : "outline"}
                     size="sm"
                     onClick={() => setIsBox(true)}
                     disabled={isOrderingDisabled}
@@ -234,7 +237,8 @@ export const ProductPage = () => {
                       kg: quantity,
                       maxKgPerOrder: product.maxKgPerOrder,
                       allowBoxes: product.allowBoxes,
-                      isBox,
+                      onlyBoxes: product.onlyBoxes,
+                      isBox: effectiveIsBox,
                     },
                     { ignoreLimits: isSuperUser },
                   );
@@ -277,6 +281,7 @@ export const ProductPage = () => {
                 isActive={item.isActive}
                 maxKgPerOrder={item.maxKgPerOrder}
                 allowBoxes={item.allowBoxes}
+                onlyBoxes={item.onlyBoxes}
               />
             ))}
           </div>
@@ -285,3 +290,4 @@ export const ProductPage = () => {
     </section>
   );
 };
+

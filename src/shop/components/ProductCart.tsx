@@ -19,6 +19,7 @@ interface ProductCardProps {
   isActive: boolean;
   maxKgPerOrder: number;
   allowBoxes: boolean;
+  onlyBoxes: boolean;
   initialKg?: number;
 }
 
@@ -32,6 +33,7 @@ export const ProductCard = ({
   isActive,
   maxKgPerOrder,
   allowBoxes,
+  onlyBoxes,
   initialKg = 1,
 }: ProductCardProps) => {
   const user = useAuthStore((state) => state.user);
@@ -48,8 +50,9 @@ export const ProductCard = ({
     if (!Number.isFinite(parsed)) return 1;
     return Math.max(0, Math.min(kgLimit, Math.floor(parsed)));
   });
-  const [isBox, setIsBox] = useState(false);
-  const quantityLabel = isBox ? "cajas" : "kg";
+  const [isBox, setIsBox] = useState(onlyBoxes);
+  const effectiveIsBox = onlyBoxes || isBox;
+  const quantityLabel = effectiveIsBox ? "cajas" : "kg";
 
   const addItem = useCartStore((state) => state.addItem);
   const isAddDisabled = isOrderingDisabled || kg < 1;
@@ -65,7 +68,7 @@ export const ProductCard = ({
 
   const handleAddToCart = () => {
     if (kg < 1) {
-      toast.error(`Selecciona al menos 1 ${isBox ? "caja" : "kg"}`);
+      toast.error(`Selecciona al menos 1 ${effectiveIsBox ? "caja" : "kg"}`);
       return;
     }
 
@@ -78,7 +81,8 @@ export const ProductCard = ({
         kg,
         maxKgPerOrder,
         allowBoxes,
-        isBox,
+        onlyBoxes,
+        isBox: effectiveIsBox,
       },
       { ignoreLimits: isSuperUser },
     );
@@ -118,7 +122,7 @@ export const ProductCard = ({
           <div className="space-y-3">
             <div>
               <p className="font-semibold text-lg">
-                {isBox ? (
+                {effectiveIsBox ? (
                   "Precio no disponible para cajas"
                 ) : (
                   <span translate="no">{currencyFormatter(price)} / kg</span>
@@ -129,7 +133,7 @@ export const ProductCard = ({
               </p>
             </div>
 
-            {allowBoxes && (
+            {allowBoxes && !onlyBoxes && (
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -171,7 +175,7 @@ export const ProductCard = ({
                   value={kg}
                   onChange={handleKgChange}
                   className="h-8 min-w-0 flex-1 rounded-none border-0 px-0 text-center text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  aria-label={`${isBox ? "Cajas" : "Kg"} para ${name}`}
+                  aria-label={`${effectiveIsBox ? "Cajas" : "Kg"} para ${name}`}
                   disabled={isOrderingDisabled}
                 />
                 <button

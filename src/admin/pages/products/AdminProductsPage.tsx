@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PencilIcon, PlusIcon, Search, Trash2Icon, X } from "lucide-react";
@@ -39,12 +39,12 @@ export const AdminProductsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      toast.success("Producto eliminado con éxito");
+      toast.success("Producto eliminado con Ã©xito");
     },
   });
 
   const handleDelete = async (productId: string) => {
-    const confirmDelete = window.confirm("¿Seguro que quieres eliminar este producto?");
+    const confirmDelete = window.confirm("Â¿Seguro que quieres eliminar este producto?");
     if (!confirmDelete) return;
 
     try {
@@ -95,7 +95,7 @@ export const AdminProductsPage = () => {
   return (
     <>
       <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <AdminTitle title="Productos" subtitle="Gestión de productos" />
+        <AdminTitle title="Productos" subtitle="GestiÃ³n de productos" />
 
         <div className="flex flex-wrap justify-end gap-4">
           <div className="flex items-center gap-2">
@@ -162,8 +162,8 @@ export const AdminProductsPage = () => {
             <TableHead>Nombre</TableHead>
             <TableHead>Precio</TableHead>
             <TableHead>Inventario</TableHead>
-            <TableHead>Máx. kg</TableHead>
-            <TableHead>Cajas</TableHead>
+            <TableHead>MÃ¡x. kg</TableHead>
+            <TableHead>Modo pedido</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
@@ -189,7 +189,13 @@ export const AdminProductsPage = () => {
               <TableCell>{currencyFormatter(product.price)}</TableCell>
               <TableCell>{product.stock} en stock</TableCell>
               <TableCell>{product.maxKgPerOrder} kg</TableCell>
-              <TableCell>{product.allowBoxes ? "Sí" : "No"}</TableCell>
+              <TableCell>
+                {product.onlyBoxes
+                  ? "Solo cajas"
+                  : product.allowBoxes
+                  ? "Kg y cajas"
+                  : "Solo kg"}
+              </TableCell>
               <TableCell>
                 <span
                   className={`rounded-full px-2 py-1 text-xs font-medium ${
@@ -222,3 +228,4 @@ export const AdminProductsPage = () => {
     </>
   );
 };
+

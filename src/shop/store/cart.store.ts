@@ -9,6 +9,7 @@ export type CartItem = {
   kg: number;
   maxKgPerOrder: number;
   allowBoxes: boolean;
+  onlyBoxes: boolean;
   isBox: boolean;
 };
 
@@ -65,8 +66,10 @@ const normalizeCartItem = (item: Partial<CartItem>): CartItem => ({
   image: item.image || "",
   kg: Math.max(1, Math.floor(Number(item.kg || 1))),
   maxKgPerOrder: safeItemMaxKg(item.maxKgPerOrder),
-  allowBoxes: Boolean(item.allowBoxes),
-  isBox: Boolean(item.isBox) && Boolean(item.allowBoxes),
+  allowBoxes: Boolean(item.allowBoxes) || Boolean(item.onlyBoxes),
+  onlyBoxes: Boolean(item.onlyBoxes),
+  isBox:
+    Boolean(item.onlyBoxes) || (Boolean(item.isBox) && Boolean(item.allowBoxes)),
 });
 
 const validateItems = (
@@ -77,6 +80,9 @@ const validateItems = (
 ) => {
   if (items.some((item) => item.isBox && !item.allowBoxes)) {
     return "Uno o mas productos no permiten pedidos por caja";
+  }
+  if (items.some((item) => item.onlyBoxes && !item.isBox)) {
+    return "Uno o mas productos solo permiten pedidos por caja";
   }
 
   if (!options?.ignoreLimits) {
@@ -176,6 +182,12 @@ export const useCartStore = create<CartState>()(
         if (!item) {
           return { ok: false, error: "Producto no encontrado en el pedido" };
         }
+        if (!isBox && item.onlyBoxes) {
+          return {
+            ok: false,
+            error: "Este producto solo permite pedidos por caja",
+          };
+        }
         if (isBox && !item.allowBoxes) {
           return {
             ok: false,
@@ -185,7 +197,10 @@ export const useCartStore = create<CartState>()(
 
         const nextItems = items.map((current) =>
           current.productId === productId
-            ? { ...current, isBox: isBox && current.allowBoxes }
+            ? {
+                ...current,
+                isBox: current.onlyBoxes ? true : isBox && current.allowBoxes,
+              }
             : current,
         );
 

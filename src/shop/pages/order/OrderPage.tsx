@@ -321,7 +321,7 @@ export const OrderPage = () => {
                           </div>
 
                           <div className="flex items-center gap-3">
-                            {item.allowBoxes && (
+                            {item.allowBoxes && !item.onlyBoxes && (
                               <Button
                                 type="button"
                                 variant={item.isBox ? "default" : "outline"}

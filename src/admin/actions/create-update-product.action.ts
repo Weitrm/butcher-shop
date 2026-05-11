@@ -6,6 +6,12 @@ import {
 } from "@/lib/product-image";
 import { sleep } from "@/lib/sleep";
 
+const toBoolean = (value: unknown, fallback: boolean) => {
+    if (value === undefined || value === null) return fallback;
+    if (typeof value === "string") return value.toLowerCase() === "true";
+    return Boolean(value);
+};
+
 export const createUpdateProductAction = async (
     productLike: Partial<Product> & { files?: File[] }
 ): Promise<Product> => {
@@ -19,10 +25,16 @@ export const createUpdateProductAction = async (
     rest.stock = Number(rest.stock || 0);
     rest.price = Number(rest.price || 0);
     rest.maxKgPerOrder = Number(rest.maxKgPerOrder || 10);
-    rest.isActive = rest.isActive === undefined ? true : Boolean(rest.isActive);
-    rest.allowBoxes = rest.allowBoxes === undefined ? false : Boolean(rest.allowBoxes);
-    rest.allowAllSectors =
-        rest.allowAllSectors === undefined ? true : Boolean(rest.allowAllSectors);
+    rest.isActive = toBoolean(rest.isActive, true);
+    rest.allowBoxes = toBoolean(rest.allowBoxes, false);
+    rest.onlyBoxes = toBoolean(rest.onlyBoxes, false);
+    if (rest.onlyBoxes) {
+        rest.allowBoxes = true;
+    }
+    if (!rest.allowBoxes) {
+        rest.onlyBoxes = false;
+    }
+    rest.allowAllSectors = toBoolean(rest.allowAllSectors, true);
     rest.allowedSectorIds = Array.from(
         new Set(
             ((rest.allowedSectorIds || []) as string[])

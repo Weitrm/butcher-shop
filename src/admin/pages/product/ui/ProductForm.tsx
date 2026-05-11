@@ -46,12 +46,34 @@ export const ProductForm = ({title, subTitle, product, sectors, onSubmit, isPend
         setValue('images', product.images || []);
     }, [product, setValue])
 
+    useEffect(() => {
+        register("allowBoxes");
+        register("onlyBoxes");
+    }, [register]);
+
     const currentStock = watch('stock');
     const isActive = watch('isActive') ?? true;
     const allowBoxes = watch('allowBoxes') ?? false;
+    const onlyBoxes = watch('onlyBoxes') ?? false;
     const allowAllSectors = watch('allowAllSectors') ?? true;
     const selectedSectorIds = watch('allowedSectorIds') || [];
     const isEditing = product.id !== "new";
+    const orderMode = onlyBoxes ? "only-boxes" : allowBoxes ? "kg-and-boxes" : "only-kg";
+
+    const setOrderMode = (mode: "only-kg" | "kg-and-boxes" | "only-boxes") => {
+        if (mode === "only-kg") {
+            setValue("allowBoxes", false, { shouldDirty: true });
+            setValue("onlyBoxes", false, { shouldDirty: true });
+            return;
+        }
+        if (mode === "kg-and-boxes") {
+            setValue("allowBoxes", true, { shouldDirty: true });
+            setValue("onlyBoxes", false, { shouldDirty: true });
+            return;
+        }
+        setValue("allowBoxes", true, { shouldDirty: true });
+        setValue("onlyBoxes", true, { shouldDirty: true });
+    };
 
     const statusCard = (
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
@@ -83,16 +105,39 @@ export const ProductForm = ({title, subTitle, product, sectors, onSubmit, isPend
                 />
             </label>
 
-            <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <span className="text-sm font-medium text-slate-700">
-                    Permitir pedidos por caja
-                </span>
-                <input
-                    type="checkbox"
-                    {...register('allowBoxes')}
-                    className="h-4 w-4"
-                />
-            </label>
+            <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+                <p className="text-sm font-medium text-slate-700">Modo de pedido</p>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                        type="radio"
+                        name="orderMode"
+                        checked={orderMode === "only-kg"}
+                        onChange={() => setOrderMode("only-kg")}
+                        className="h-4 w-4"
+                    />
+                    Solo kg
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                        type="radio"
+                        name="orderMode"
+                        checked={orderMode === "kg-and-boxes"}
+                        onChange={() => setOrderMode("kg-and-boxes")}
+                        className="h-4 w-4"
+                    />
+                    Kg y cajas
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                        type="radio"
+                        name="orderMode"
+                        checked={orderMode === "only-boxes"}
+                        onChange={() => setOrderMode("only-boxes")}
+                        className="h-4 w-4"
+                    />
+                    Solo cajas
+                </label>
+            </div>
 
             <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <span className="text-sm font-medium text-slate-700">
@@ -186,13 +231,21 @@ export const ProductForm = ({title, subTitle, product, sectors, onSubmit, isPend
 
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
             <span className="text-sm font-medium text-slate-700">
-                Modo caja
+                Modo de pedido
             </span>
             <span className={cn(
                 "px-2 py-1 text-xs font-medium rounded-full",
-                allowBoxes ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-700"
+                orderMode === "only-kg"
+                    ? "bg-slate-100 text-slate-700"
+                    : orderMode === "kg-and-boxes"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-orange-100 text-orange-800"
             )}>
-                {allowBoxes ? 'Permitido' : 'No permitido'}
+                {orderMode === "only-kg"
+                    ? "Solo kg"
+                    : orderMode === "kg-and-boxes"
+                    ? "Kg y cajas"
+                    : "Solo cajas"}
             </span>
             </div>
         </div>
