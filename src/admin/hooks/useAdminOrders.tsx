@@ -19,7 +19,7 @@ interface Options {
   sort?: "default" | "statusEmployeeAsc";
   limit?: number;
   page?: number;
-}
+} 
 
 export const useAdminOrders = (options: Options = {}) => {
   const [searchParams] = useSearchParams();

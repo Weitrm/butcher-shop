@@ -39,12 +39,12 @@ export const AdminProductsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      toast.success("Producto eliminado con Ã©xito");
+      toast.success("Producto eliminado con éxito");
     },
   });
 
   const handleDelete = async (productId: string) => {
-    const confirmDelete = window.confirm("Â¿Seguro que quieres eliminar este producto?");
+    const confirmDelete = window.confirm("¿Seguro que quieres eliminar este producto?");
     if (!confirmDelete) return;
 
     try {
@@ -95,7 +95,7 @@ export const AdminProductsPage = () => {
   return (
     <>
       <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <AdminTitle title="Productos" subtitle="GestiÃ³n de productos" />
+        <AdminTitle title="Productos" subtitle="Gestión de productos" />
 
         <div className="flex flex-wrap justify-end gap-4">
           <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export const AdminProductsPage = () => {
             <TableHead>Nombre</TableHead>
             <TableHead>Precio</TableHead>
             <TableHead>Inventario</TableHead>
-            <TableHead>MÃ¡x. kg</TableHead>
+            <TableHead>Máx. kg</TableHead>
             <TableHead>Modo pedido</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
